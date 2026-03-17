@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .pdp-container {
+      max-width: 1200px;
+      margin: 120px auto 50px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      padding: 0 20px;
+    }
+    .pdp-image-container img {
+      width: 100%;
+      height: auto;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      object-fit: cover;
+      max-height: 600px;
+    }
+    .pdp-details {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      background: var(--primary);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      width: fit-content;
+    }
+    .pdp-title {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .pdp-price {
+      font-size: 32px;
+      color: var(--primary);
+      font-weight: 800;
+      margin-bottom: 30px;
+    }
+    .pdp-desc {
+      font-size: 18px;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    @media (max-width: 768px) {
+      .pdp-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="mixed-bg">
+
+  <!-- NAVBAR -->
+  <nav class="glass-dark" style="position: fixed; top:20px; left:5%; right:5%; width:90%; border-radius: 50px;">
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul id="navLinks">
+      <li><a href="index.html" class="text-light">Back to Shop</a></li>
+    </ul>
+  </nav>
+
+  <div class="pdp-container" id="pdpContent">
+    <div style="text-align:center; grid-column:1/-1;">
+      <h2>Loading Product details...</h2>
+    </div>
+  </div>
+
+  <div id="reviewsSection" style="max-width: 1200px; margin: 0 auto 100px; padding: 0 20px; display: none;">
+    <h2 style="margin-bottom: 30px;">Customer <span class="accent-text">Reviews</span></h2>
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 50px;">
+      
+      <!-- Review Form -->
+      <div class="glass" style="padding: 30px; height: fit-content;" id="reviewFormContainer">
+        <h3 style="margin-bottom: 20px;">Write a Review</h3>
+        <p id="reviewLoginPrompt" style="color:var(--primary); margin-bottom:15px; display:none;">Please log in to leave a review.</p>
+        <form id="reviewForm" onsubmit="submitReview(event)">
+          <div class="input-group">
+            <label>Rating (1-5)</label>
+            <input type="number" id="reviewRating" min="1" max="5" value="5" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+          </div>
+          <div class="input-group">
+            <label>Review</label>
+            <textarea id="reviewComment" rows="4" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;" placeholder="What did you like about this product?"></textarea>
+          </div>
+          <button type="submit" class="btn" style="width:100%;">Submit Review</button>
+        </form>
+      </div>
+
+      <!-- Reviews List -->
+      <div id="reviewsList" style="display:flex; flex-direction:column; gap:20px;">
+        <p>Loading reviews...</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let currentProduct = null;
+
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    function updateHeader() {
+      const token = localStorage.getItem('token');
+      const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const navLinks = document.getElementById('navLinks');
+      
+      navLinks.innerHTML = `
+        <li><a href="index.html" class="text-light">Back to Shop</a></li>
+        <li><a href="cart.html" class="text-light">Cart (<span style="color:var(--primary)">${cartCount}</span>)</a></li>
+      `;
+    }
+
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+
+      if (!id) {
+        document.getElementById('pdpContent').innerHTML = `<h2 class="text-center" style="grid-column:1/-1;">Product Not Found</h2><a href="index.html" class="btn text-center" style="grid-column:1/-1; width:fit-content; margin:auto;">Return Home</a>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        if (!res.ok) throw new Error("Not found");
+        
+        currentProduct = await res.json();
+        
+        const safeName = currentProduct.name || 'Premium Item';
+        const pDesc = currentProduct.description || 'Premium aesthetic furniture piece for modern living. Elevate your space with this stunning addition.';
+        const category = currentProduct.category || 'Uncategorized';
+        
+        document.title = `${safeName} | Cross Interior`;
+
+        // Fetch Reviews to get average rating
+        const revRes = await fetch(`/api/reviews/${id}`);
+        let avgRatingHtml = '';
+        if(revRes.ok) {
+           const reviews = await revRes.json();
+           if(reviews.length > 0) {
+             const sum = reviews.reduce((a,b) => a + b.rating, 0);
+             const avg = (sum / reviews.length).toFixed(1);
+             avgRatingHtml = `<div style="color:#f39c12; font-size:20px; margin-bottom:20px;">★ ${avg} <span style="color:#aaa; font-size:14px;">(${reviews.length} reviews)</span></div>`;
+           } else {
+             avgRatingHtml = `<div style="color:#aaa; font-size:14px; margin-bottom:20px;">No reviews yet</div>`;
+           }
+        }
+
+        document.getElementById('pdpContent').innerHTML = `
+          <div class="pdp-image-container">
+            <img src="${currentProduct.image}" alt="${safeName}" onerror="this.src='https://images.unsplash.com/photo-1586023492125-27b2c045efd7'">
+          </div>
+          <div class="pdp-details">
+            <span class="badge">${category}</span>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px;">
+              <h1 class="pdp-title" style="margin-bottom:0;">${safeName}</h1>
+              <button onclick="toggleWishlist('${currentProduct._id}')" id="pdpHeartBtn" style="background:rgba(0,0,0,0.1); border:none; border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:24px; transition: transform 0.2s;">
+                🤍
+              </button>
+            </div>
+            ${avgRatingHtml}
+            <div class="pdp-price">₹${currentProduct.price || 0}</div>
+            <p class="pdp-desc">${pDesc}</p>
+            
+            <div style="display:flex; gap:15px;">
+              ${currentProduct.stock > 0 
+                ? `<button class="btn" style="flex:1; font-size:18px; padding:15px;" onclick="addCurrentToCart()">Add to Cart</button>`
+                : `<button class="btn btn-outline" style="flex:1; font-size:18px; padding:15px; border-color: #666; color: #666; cursor: not-allowed;" disabled>Out of Stock</button>`}
+            </div>
+            
+            <div style="margin-top:40px; border-top:1px solid rgba(0,0,0,0.1); padding-top:20px;">
+              <p style="color:#666; font-size:14px;">✓ Free Premium Delivery<br>✓ 30-Day Returns<br>✓ 5-Year Warranty</p>
+            </div>
+          </div>
+        `;
+        
+        document.getElementById('reviewsSection').style.display = 'block';
+        loadReviews();
+
+        // Check wishlist
+        const token = localStorage.getItem('token');
+        if(token) {
+          document.getElementById('reviewForm').style.display = 'block';
+          document.getElementById('reviewLoginPrompt').style.display = 'none';
+
+          const userRes = await fetch("/api/auth/me", { headers: { "auth-token": token } });
+          if(userRes.ok) {
+            const user = await userRes.json();
+            const inWishlist = (user.wishlist || []).some(w => (w._id || w) === currentProduct._id);
+            if(inWishlist) {
+              document.getElementById('pdpHeartBtn').textContent = '❤️';
+            }
+          }
+        } else {
+          document.getElementById('reviewForm').style.display = 'none';
+          document.getElementById('reviewLoginPrompt').style.display = 'block';
+        }
+        
+      } catch(err) {
+        document.getElementById('pdpContent').innerHTML = `<h2 class="text-center" style="grid-column:1/-1;">Error loading product</h2>`;
+      }
+    }
+
+    function addCurrentToCart() {
+      if(!currentProduct || currentProduct.stock <= 0) return;
+      const existing = cart.find(i => i._id === currentProduct._id);
+      
+      if (existing) {
+        if (existing.quantity >= currentProduct.stock) {
+          showNotification(`Only ${currentProduct.stock} left in stock.`);
+          return;
+        }
+        existing.quantity += 1;
+      } else {
+        cart.push({ 
+          _id: currentProduct._id, 
+          name: currentProduct.name || 'Premium Item', 
+          price: currentProduct.price || 0, 
+          image: currentProduct.image, 
+          quantity: 1 
+        });
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      updateHeader();
+      showNotification(`${currentProduct.name || 'Item'} added to cart!`);
+    }
+
+    async function toggleWishlist(productId) {
+      const token = localStorage.getItem('token');
+      if(!token) {
+        showNotification("Please login to use wishlists");
+        setTimeout(() => window.location='login.html', 1500);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/auth/wishlist/toggle/${productId}`, {
+          method: "POST",
+          headers: { "auth-token": token }
+        });
+        if(res.ok) {
+          const newWishlist = await res.json();
+          const inWishlist = newWishlist.includes(productId);
+          document.getElementById('pdpHeartBtn').textContent = inWishlist ? '❤️' : '🤍';
+          // animate
+          document.getElementById('pdpHeartBtn').style.transform = 'scale(1.2)';
+          setTimeout(() => document.getElementById('pdpHeartBtn').style.transform = 'scale(1)', 200);
+        }
+      } catch(err) {
+        showNotification("Error updating wishlist");
+      }
+    }
+
+    async function loadReviews() {
+      if(!currentProduct) return;
+      const list = document.getElementById('reviewsList');
+      try {
+        const res = await fetch(`/api/reviews/${currentProduct._id}`);
+        const reviews = await res.json();
+        if(reviews.length === 0) {
+          list.innerHTML = `<div class="glass-dark" style="padding: 20px; text-align: center;">No reviews yet. Be the first to review this product!</div>`;
+          return;
+        }
+
+        let html = '';
+        reviews.forEach(r => {
+          let stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+          const date = new Date(r.createdAt).toLocaleDateString();
+          html += `
+            <div class="glass-dark" style="padding: 20px; border-radius: 12px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <strong style="color:var(--primary);">${r.user ? r.user.name : 'Unknown User'}</strong>
+                <span style="color:#666; font-size:14px;">${date}</span>
+              </div>
+              <div style="color:#f39c12; margin-bottom:10px;">${stars}</div>
+              <p style="color:#ccc; font-size:15px; line-height:1.5;">${r.comment}</p>
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+      } catch (err) {
+        list.innerHTML = `<p>Error loading reviews.</p>`;
+      }
+    }
+
+    async function submitReview(e) {
+      e.preventDefault();
+      const token = localStorage.getItem('token');
+      if(!token) return;
+
+      const rating = document.getElementById('reviewRating').value;
+      const comment = document.getElementById('reviewComment').value;
+
+      try {
+        const res = await fetch('/api/reviews/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'auth-token': token
+          },
+          body: JSON.stringify({
+             productId: currentProduct._id,
+             rating: Number(rating),
+             comment: comment
+          })
+        });
+
+        if(res.ok) {
+          showNotification("Review submitted successfully!");
+          document.getElementById('reviewForm').reset();
+          loadReviews(); // Refresh list
+          // Re-load product to update the top average rating
+          const res2 = await fetch(`/api/products/${currentProduct._id}`);
+          currentProduct = await res2.json();
+        } else {
+          showNotification("Failed to submit review.");
+        }
+      } catch (err) {
+        showNotification("Error submitting review.");
+      }
+    }
+
+    updateHeader();
+    loadProduct();
+  </script>
+</body>
+</html>

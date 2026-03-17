@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="gradient-bg">
+
+  <nav>
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul id="navLinks">
+      <li><a href="index.html" class="text-light">Back to Shop</a></li>
+    </ul>
+  </nav>
+
+  <div class="cart-container">
+    <h2 style="margin-bottom: 30px;">Your <span class="accent-text">Cart</span></h2>
+    <div id="cartItems">
+      <p>Your cart is empty.</p>
+    </div>
+    <div id="cartSummary" style="display:none; margin-top: 30px; padding: 30px; border-top: 1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Total: <span id="cartTotal" class="accent-text">₹0</span></h2>
+        <a href="checkout.html" class="btn" style="font-size:18px; padding:15px 35px;">Proceed to Checkout</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartItems');
+      const summary = document.getElementById('cartSummary');
+
+      if (cart.length === 0) {
+        container.innerHTML = `<div class="glass-dark" style="padding: 40px; text-align: center; border-radius: 20px;">
+          <p style="font-size: 18px; margin-bottom: 20px;">Your cart is empty 🛒</p>
+          <a href="index.html" class="btn">Start Shopping</a>
+        </div>`;
+        summary.style.display = 'none';
+        return;
+      }
+
+      let html = '';
+      let total = 0;
+      cart.forEach((item, index) => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        html += `
+          <div class="cart-item glass-dark" style="border-radius: 16px; margin-bottom: 15px;">
+            <img src="${item.image}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1586023492125-27b2c045efd7'">
+            <div class="cart-item-info">
+              <h3>${item.name}</h3>
+              <p style="color: var(--primary-light); font-weight: 600;">₹${item.price}</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button class="btn btn-outline" style="padding:5px 12px;" onclick="changeQty(${index}, -1)">−</button>
+              <span style="font-size: 18px; font-weight: 600;">${item.quantity}</span>
+              <button class="btn btn-outline" style="padding:5px 12px;" onclick="changeQty(${index}, 1)">+</button>
+            </div>
+            <div style="text-align:right; min-width: 80px;">
+              <p style="font-weight: 700; font-size: 18px;">₹${itemTotal}</p>
+              <button style="background:none; border:none; color:#e74c3c; cursor:pointer; margin-top: 5px; font-size:14px;" onclick="removeItem(${index})">Remove</button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+      summary.style.display = 'block';
+      document.getElementById('cartTotal').textContent = `₹${total}`;
+    }
+
+    function changeQty(index, delta) {
+      cart[index].quantity += delta;
+      if (cart[index].quantity <= 0) cart.splice(index, 1);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderCart();
+    }
+
+    function removeItem(index) {
+      cart.splice(index, 1);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderCart();
+      showNotification("Item removed");
+    }
+
+    renderCart();
+  </script>
+</body>
+</html>

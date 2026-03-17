@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="gradient-bg">
+
+  <nav>
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul>
+      <li><a href="cart.html" class="text-light">Back to Cart</a></li>
+    </ul>
+  </nav>
+
+  <div class="checkout-container">
+    <div class="form-box glass-dark" style="max-width: 600px; margin: 40px auto;">
+      <h2>Secure <span class="accent-text">Checkout</span></h2>
+      <p style="color: #aaa; margin-bottom: 25px;">Complete your order below</p>
+      
+      <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 14px; margin-bottom: 25px;">
+        <h3 style="margin-bottom: 10px;">Order Summary</h3>
+        <div id="checkoutItemsList" style="color:#aaa;"></div>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+        <div style="display:flex; justify-content:space-between;">
+          <span style="font-size: 18px; font-weight: 600;">Total:</span>
+          <span id="checkoutTotal" class="price-tag">₹0</span>
+        </div>
+      </div>
+
+      <form id="checkoutForm" onsubmit="handleCheckout(event)">
+        <div class="input-group">
+          <label>Shipping Address</label>
+          <input type="text" id="shippingAddress" required placeholder="Full address with city, state, ZIP">
+        </div>
+        
+        <h3 style="margin: 20px 0 15px; color: var(--primary-light);">Payment Details</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+          <div class="input-group" style="grid-column: 1/-1;">
+            <label>Card Number</label>
+            <input type="text" placeholder="4242 4242 4242 4242" maxlength="19" required>
+          </div>
+          <div class="input-group">
+            <label>Expiry</label>
+            <input type="text" placeholder="MM/YY" maxlength="5" required>
+          </div>
+          <div class="input-group">
+            <label>CVC</label>
+            <input type="text" placeholder="123" maxlength="4" required>
+          </div>
+        </div>
+        <p style="font-size:12px; color:#666; margin-bottom:15px;">Demo environment: Stripe keys invalid. Mock payment simulated on submit.</p>
+        <button type="submit" class="btn" style="width: 100%; font-size: 18px; padding: 16px;">Pay Now 💳</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="successModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:none; justify-content:center; align-items:center;">
+    <div class="glass-dark" style="text-align:center; padding: 50px; max-width: 400px; border-radius: 24px;">
+      <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
+      <h2>Order Placed!</h2>
+      <p style="color: #aaa; margin: 15px 0;">Your premium furniture is on its way.</p>
+      <a href="index.html" class="btn">Continue Shopping</a>
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      window.location = "login.html";
+    }
+
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    // Load order summary
+    let total = 0;
+    const itemsHtml = cart.map(i => {
+      const sub = i.price * i.quantity;
+      total += sub;
+      return `<p>${i.name} x${i.quantity} — <strong>₹${sub}</strong></p>`;
+    }).join('');
+    document.getElementById('checkoutItemsList').innerHTML = itemsHtml || '<p>No items</p>';
+    document.getElementById('checkoutTotal').textContent = `₹${total}`;
+
+    async function handleCheckout(e) {
+      e.preventDefault();
+      const shippingAddress = document.getElementById('shippingAddress').value;
+
+      try {
+        const res = await fetch("/api/orders/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "auth-token": token
+          },
+          body: JSON.stringify({
+            items: cart,
+            totalAmount: total,
+            shippingAddress: shippingAddress
+          })
+        });
+
+        if (res.ok) {
+          localStorage.removeItem('cart');
+          document.getElementById('successModal').style.display = 'flex';
+        } else {
+          const errMsg = await res.json();
+          showNotification(errMsg || "Checkout failed");
+        }
+      } catch (err) {
+        showNotification("Error processing order");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cross Interior | Premium Furniture & AI Design</title>
+  <meta name="description" content="Shop premium furniture and experience AI-powered room transformations at Cross Interior.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="gradient-bg">
+
+  <nav>
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul id="navLinks">
+      <li><a href="login.html" class="text-light">Login</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Elevate Your <span class="accent-text">Living Space</span></h1>
+    <p>Discover premium furniture designed for modern aesthetics. AI-powered room transformations at your fingertips.</p>
+    <a href="#products" class="btn">Explore Collection</a>
+  </section>
+
+  <!-- AI DESIGN DEMO -->
+  <section class="ai-section glass-dark" style="margin: 0 40px 40px; border-radius: 20px; padding: 50px;">
+    <h2 style="font-size: 28px; margin-bottom: 10px;">🤖 AI Room <span class="accent-text">Transformation</span></h2>
+    <p style="color:#aaa; margin-bottom: 30px;">Upload your room photo and let our AI design engine reimagine it with our furniture.</p>
+    <div id="aiUploadState">
+      <input type="file" id="roomUpload" accept="image/*" style="display:none">
+      <button class="btn" onclick="document.getElementById('roomUpload').click()">Browse Files</button>
+      <button class="btn btn-outline" style="margin-left:10px;" onclick="startAiDemo()">Transform Room ✨</button>
+    </div>
+    <div id="aiProcessingState" style="display:none;">
+      <div style="width: 300px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 20px auto;">
+        <div id="aiProgress" style="width: 0%; height: 100%; background: var(--gradient-1); border-radius: 10px; transition: width 0.3s;"></div>
+      </div>
+      <p style="color:#aaa;">Analyzing your room...</p>
+    </div>
+    <div id="aiResultState" style="display:none;">
+      <p style="color: var(--primary-light); font-size: 18px;">✨ Transformation complete! Your redesigned room is ready.</p>
+      <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace" alt="AI Result" style="width:100%; max-width:500px; border-radius:20px; margin-top:20px;">
+    </div>
+  </section>
+
+  <!-- CATEGORIES & SEARCH -->
+  <section id="products" style="padding-top: 20px;">
+    <h2 class="text-center" style="font-size: 28px; margin-bottom: 25px;">Our <span class="accent-text">Collection</span></h2>
+    <div class="category-filters" id="categoryFilters">
+      <button class="btn" onclick="filterCategory('All', this)">All</button>
+      <button class="btn btn-outline" onclick="filterCategory('Sofas', this)">Sofas</button>
+      <button class="btn btn-outline" onclick="filterCategory('Tables', this)">Tables</button>
+      <button class="btn btn-outline" onclick="filterCategory('Chairs', this)">Chairs</button>
+      <button class="btn btn-outline" onclick="filterCategory('Decor', this)">Decor</button>
+    </div>
+  </section>
+
+  <!-- PRODUCT GRID -->
+  <div class="grid" id="productContainer">
+    <p class="text-center" style="grid-column: 1/-1;">Loading products...</p>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let currentCategory = 'All';
+    let currentSearch = '';
+    let wishlist = [];
+
+    const searchHtml = `<li><input type="text" id="searchInput" placeholder="Search products..." oninput="handleSearch(this.value)" style="padding:8px 14px; border:1px solid rgba(255,255,255,0.2); border-radius:10px; background:rgba(255,255,255,0.05); color:white; font-family:'Outfit'; font-size:14px; width:200px;" /></li>`;
+
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    function updateHeader() {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      const name = localStorage.getItem('name') || 'User';
+      const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const navLinks = document.getElementById('navLinks');
+      
+      if (token && role === 'admin') {
+        navLinks.innerHTML = `
+          ${searchHtml}
+          <li><a href="#products" class="text-light">Shop</a></li>
+          <li><a href="admin.html" class="text-light" style="color:var(--accent-2);">Admin Panel</a></li>
+          <li><a href="#" onclick="logout(); return false;" class="text-light">Logout</a></li>
+        `;
+      } else if (token) {
+        navLinks.innerHTML = `
+          ${searchHtml}
+          <li><a href="#products" class="text-light">Shop</a></li>
+          <li><a href="cart.html" class="text-light">Cart (<span style="color:var(--primary)">${cartCount}</span>)</a></li>
+          <li><a href="profile.html" class="text-light" style="font-weight:bold;">Hi, ${name}</a></li>
+          <li><button class="btn btn-outline" style="padding: 8px 15px" onclick="logout()">Logout</button></li>
+        `;
+      } else {
+        navLinks.innerHTML = `
+          ${searchHtml}
+          <li><a href="#products" class="text-light">Shop</a></li>
+          <li><a href="cart.html" class="text-light">Cart (<span style="color:var(--primary)">${cartCount}</span>)</a></li>
+          <li><a href="login.html" class="text-light">Login</a></li>
+          <li><a href="signup.html" class="btn" style="padding: 8px 20px;">Sign Up</a></li>
+        `;
+      }
+
+      const searchInput = document.getElementById('searchInput');
+      if(searchInput && currentSearch) {
+        searchInput.value = currentSearch;
+        searchInput.focus();
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.reload();
+    }
+
+    function addToCart(productId, name, price, image) {
+      const existing = cart.find(i => i._id === productId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ _id: productId, name, price, image, quantity: 1 });
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      updateHeader();
+      showNotification(`${name} added to cart!`);
+    }
+
+    function filterCategory(cat, btn) {
+      currentCategory = cat;
+      document.querySelectorAll('#categoryFilters button').forEach(b => {
+        b.className = 'btn btn-outline';
+      });
+      btn.className = 'btn';
+      loadProducts();
+    }
+
+    let searchTimeout = null;
+    function handleSearch(val) {
+      if(searchTimeout) clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentSearch = val.trim();
+        loadProducts();
+      }, 300);
+    }
+
+    async function loadProducts() {
+      const container = document.getElementById('productContainer');
+      container.innerHTML = `<p class="text-center" style="grid-column: 1/-1;">Loading...</p>`;
+      
+      try {
+        const token = localStorage.getItem('token');
+        if(token) {
+          const userRes = await fetch("/api/auth/me", { headers: { "auth-token": token } });
+          if(userRes.ok) {
+            const user = await userRes.json();
+            wishlist = (user.wishlist || []).map(w => w._id || w);
+          }
+        }
+
+        let url = currentCategory === 'All' ? '/api/products' : `/api/products?category=${currentCategory}`;
+        if(currentCategory !== 'All' && currentSearch) {
+          url += `&search=${encodeURIComponent(currentSearch)}`;
+        } else if (currentCategory === 'All' && currentSearch) {
+          url += `?search=${encodeURIComponent(currentSearch)}`;
+        }
+        
+        const res = await fetch(url);
+        const products = await res.json();
+        
+        let html = '';
+        products.forEach(p => {
+          const safeName = p.name || 'Premium Item';
+          const pName = safeName.replace(/'/g, "\\'");
+          const pPrice = p.price || 0;
+          const pDesc = p.description || 'Premium aesthetic furniture piece for modern living.';
+          
+          const inWishlist = wishlist.includes(p._id);
+          const heartIcon = inWishlist ? '❤️' : '🤍';
+          const isOutOfStock = p.stock <= 0;
+          
+          let addToCartBtn = isOutOfStock
+            ? `<button class="btn btn-outline" style="width:100%; border-color: #666; color: #666; cursor: not-allowed;" disabled>Out of Stock</button>`
+            : `<button class="btn" style="width:100%;" onclick="addToCart('${p._id}', '${pName}', ${pPrice}, '${p.image}')">Add to Cart</button>`;
+
+          html += `
+            <div class="product-card glass-dark" style="position:relative;">
+              <button onclick="toggleWishlist('${p._id}')" class="wishlist-btn" style="position:absolute; top:15px; left:15px; background:rgba(0,0,0,0.5); border:none; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; z-index:10; backdrop-filter:blur(5px); transition: transform 0.2s;">${heartIcon}</button>
+              <a href="product.html?id=${p._id}">
+                <img src="${p.image}" alt="${safeName}" onerror="this.src='https://images.unsplash.com/photo-1586023492125-27b2c045efd7'" style="cursor:pointer; transition: opacity 0.3s; ${isOutOfStock ? 'opacity: 0.5;' : ''}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='${isOutOfStock ? 0.5 : 1}'">
+              </a>
+              <h3 style="margin-bottom: 5px;"><a href="product.html?id=${p._id}" style="color:inherit; text-decoration:none;">${safeName}</a></h3>
+              <p style="color:#aaa; font-size:14px; margin-bottom: 15px; min-height:40px;">${pDesc}</p>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <span class="price-tag">₹${pPrice}</span>
+              </div>
+              ${addToCartBtn}
+            </div>
+          `;
+        });
+        
+        if(products.length === 0) {
+          html = `<p class="text-center" style="grid-column: 1/-1;">No products found in ${currentCategory}.</p>`;
+        }
+        
+        container.innerHTML = html;
+      } catch (err) {
+        console.error("Product Load Error:", err);
+        container.innerHTML = `<p class="text-center" style="grid-column: 1/-1; color:var(--primary);">Failed to load products. Error: ${err.message}</p>`;
+      }
+    }
+
+    async function toggleWishlist(productId) {
+      const token = localStorage.getItem('token');
+      if(!token) {
+        showNotification("Please login to use wishlists");
+        setTimeout(() => window.location='login.html', 1500);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/auth/wishlist/toggle/${productId}`, {
+          method: "POST",
+          headers: { "auth-token": token }
+        });
+        if(res.ok) {
+          wishlist = await res.json();
+          loadProducts();
+          showNotification("Wishlist updated!");
+        }
+      } catch(err) {
+        showNotification("Error updating wishlist");
+      }
+    }
+
+    function startAiDemo() {
+      if(!document.getElementById('roomUpload').files.length) return;
+      document.getElementById('aiUploadState').style.display = 'none';
+      document.getElementById('aiProcessingState').style.display = 'block';
+      let progress = 0;
+      const progressTracker = setInterval(() => {
+        progress += Math.random() * 20;
+        if(progress >= 100) {
+          progress = 100;
+          clearInterval(progressTracker);
+          setTimeout(() => {
+            document.getElementById('aiProcessingState').style.display = 'none';
+            document.getElementById('aiResultState').style.display = 'block';
+          }, 500);
+        }
+        document.getElementById('aiProgress').style.width = progress + '%';
+      }, 400);
+    }
+
+    updateHeader();
+    loadProducts();
+  </script>
+</body>
+</html>

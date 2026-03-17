@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body class="gradient-bg">
+
+  <nav class="glass-dark" style="background: rgba(0,0,0,0.2); border:none; border-bottom:1px solid rgba(255,255,255,0.1); position:absolute; width:100%;">
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul>
+      <li><a href="cart.html" class="text-light">Back to Cart</a></li>
+    </ul>
+  </nav>
+
+  <div class="form-container" style="padding-top: 100px;">
+    <div class="form-box glass-dark" style="max-width: 600px; text-align:left;">
+      <h2 style="text-align: center;">Secure <span class="accent-text">Checkout</span></h2>
+      
+      <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 10px;">Order Total</h3>
+        <p class="accent-text" style="font-size: 28px; font-weight: bold;" id="checkoutTotal">₹0</p>
+      </div>
+
+      <form id="payment-form">
+        <h3 style="margin-bottom: 20px;">Shipping Details</h3>
+        <div class="input-group">
+          <label>Full Address</label>
+          <input type="text" id="address" required placeholder="123 Interior Street, City, Zip" style="background:#fff; color:#333;">
+        </div>
+        
+        <h3 style="margin-top: 30px; margin-bottom: 20px;">Payment</h3>
+        <div id="payment-element" style="background: white; padding: 15px; border-radius: 8px; margin-bottom:20px;">
+          <!-- Stripe will inject the Elements here -->
+          Loading secure payment gateway...
+        </div>
+        <div id="payment-message" style="color: #ff416c; margin-bottom: 10px; display: none;"></div>
+
+        <button type="submit" id="submit" class="btn" style="width: 100%; font-size: 18px;">
+          <span id="button-text">Pay & Place Order</span>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <div id="successModal" class="glass-dark" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); padding:50px; text-align:center; z-index:10001;">
+    <h2 class="accent-text" style="font-size:40px;">Payment Successful!</h2>
+    <p style="margin: 20px 0;">Your order has been placed securely via Stripe (Demo mode).</p>
+    <a href="profile.html" class="btn">View My Orders</a>
+  </div>
+  <div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000;"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Please login to checkout");
+      window.location = "login.html";
+    }
+
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    document.getElementById('checkoutTotal').textContent = `₹${totalAmount}`;
+
+    if(cart.length === 0) {
+      window.location = "cart.html";
+    }
+
+    // This is a test public key
+    const stripeConfig = Stripe("pk_test_TYooMQauvdEDq54NiTphI7jx");
+    let elements;
+    let clientSecret;
+
+    // Initialize Stripe Elements
+    async function initialize() {
+      try {
+        const response = await fetch("/api/orders/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "auth-token": token },
+          body: JSON.stringify({ totalAmount }),
+        });
+        const data = await response.json();
+        clientSecret = data.clientSecret;
+
+        // Determine appearance
+        const appearance = { theme: 'stripe' };
+        elements = stripeConfig.elements({ appearance, clientSecret });
+
+        const paymentElementOptions = { layout: "tabs" };
+        const paymentElement = elements.create("payment", paymentElementOptions);
+        
+        // Clear loading text and mount
+        document.getElementById('payment-element').innerHTML = '';
+        paymentElement.mount("#payment-element");
+      } catch (err) {
+        // Fallback UI for Demo Environment (No real Stripe keys)
+        document.getElementById('payment-element').innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:15px; margin-top:10px;">
+            <div class="input-group">
+              <label style="font-size:14px; color:#555; margin-bottom:5px; display:block;">Card Number</label>
+              <input type="text" placeholder="💳 0000 0000 0000 0000" style="width:100%; border:1px solid #ddd; padding:12px; border-radius:6px;" required>
+            </div>
+            <div style="display:flex; gap:15px;">
+              <div class="input-group" style="flex:1;">
+                <label style="font-size:14px; color:#555; margin-bottom:5px; display:block;">Expiry Date</label>
+                <input type="text" placeholder="MM / YY" style="width:100%; border:1px solid #ddd; padding:12px; border-radius:6px;" required>
+              </div>
+              <div class="input-group" style="flex:1;">
+                <label style="font-size:14px; color:#555; margin-bottom:5px; display:block;">CVC</label>
+                <input type="password" placeholder="123" style="width:100%; border:1px solid #ddd; padding:12px; border-radius:6px;" required>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    initialize();
+
+    document.getElementById("payment-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      document.querySelector("#submit").disabled = true;
+      document.querySelector("#button-text").textContent = "Processing...";
+
+      const address = document.getElementById("address").value;
+      const items = cart.map(i => ({ product: i._id, name: i.name, price: i.price, quantity: i.quantity }));
+
+      // Simulate a successful payment regardless of Stripe's real network response 
+      // since this is a local demo with mock test keys.
+      simulateSuccess(items, address);
+    });
+
+    async function simulateSuccess(items, address) {
+      try {
+        const res = await fetch("/api/orders/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "auth-token": token
+          },
+          body: JSON.stringify({ items, totalAmount, shippingAddress: address })
+        });
+
+        if (res.ok) {
+          localStorage.removeItem('cart'); // Clear cart
+          document.getElementById('overlay').style.display = 'block';
+          document.getElementById('successModal').style.display = 'block';
+        } else {
+           throw new Error("Backend save failed");
+        }
+      } catch (err) {
+         document.getElementById("payment-message").style.display = "block";
+         document.getElementById("payment-message").textContent = "Error saving order.";
+         document.querySelector("#submit").disabled = false;
+         document.querySelector("#button-text").textContent = "Pay & Place Order";
+      }
+    }
+  </script>
+</body>
+</html>

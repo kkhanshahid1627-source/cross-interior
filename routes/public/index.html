@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cross Interior | Premium AI Furniture</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Homepage Specific Overrides */
+    .hero {
+      height: 90vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: var(--primary);
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
+      top: -200px;
+      right: -100px;
+      animation: float 6s ease-in-out infinite alternate;
+    }
+    @keyframes float {
+      0% { transform: translateY(0px) scale(1); }
+      100% { transform: translateY(50px) scale(1.1); }
+    }
+    .hero h1 {
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      z-index: 1;
+      position: relative;
+    }
+    .hero p {
+      font-size: 20px;
+      margin-bottom: 40px;
+      color: rgba(255,255,255,0.8);
+      max-width: 600px;
+      margin-inline: auto;
+      z-index: 1;
+      position: relative;
+    }
+    
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 30px;
+    }
+    .product-card {
+      padding: 20px;
+      transition: transform 0.3s;
+    }
+    .product-card:hover {
+      transform: translateY(-10px);
+    }
+    .product-card img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+    .price-tag {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    
+    .ai-upload-box {
+      border: 2px dashed rgba(255,255,255,0.3);
+      padding: 60px 40px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .ai-upload-box:hover {
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.05);
+    }
+  </style>
+</head>
+<body class="gradient-bg">
+
+  <!-- NAVBAR -->
+  <nav class="glass-dark" style="position: fixed; top:20px; left:5%; right:5%; width:90%; border-radius: 50px;">
+    <a href="#" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul id="navLinks">
+      <!-- Dynamic rendering via JS -->
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <h1 class="text-shadow text-light">Design Your <br><span class="accent-text">Dream Home</span></h1>
+      <p class="text-shadow text-light">Upload your room photo and our AI will redesign it instantly with premium furniture.</p>
+      <a class="btn" href="#ai" style="font-size:18px; padding:15px 35px;">Try AI Designer</a>
+    </div>
+  </section>
+
+  <!-- AI DESIGN -->
+  <section id="ai" class="p-section text-center">
+    <h2 style="font-size: 40px; margin-bottom: 40px;">AI Room <span class="accent-text-blue">Transformation</span></h2>
+    <div class="glass-dark ai-upload-box" style="max-width: 800px; margin: auto;" id="aiBox">
+      <div id="aiUploadState">
+        <h3 style="margin-bottom: 15px; font-size: 24px;">Drop your room photo here</h3>
+        <p style="color: #aaa; margin-bottom: 30px;">Supports JPG, PNG (Max 5MB)</p>
+        <input type="file" id="roomUpload" style="display:none" onchange="startAiDemo()">
+        <button class="btn btn-outline" onclick="document.getElementById('roomUpload').click()">Browse Files</button>
+      </div>
+      
+      <div id="aiProcessingState" style="display: none; padding: 40px 0;">
+        <h3 class="accent-text-blue" style="margin-bottom: 20px;">Analyzing Space & Lighting...</h3>
+        <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden;">
+          <div id="aiProgress" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.5s;"></div>
+        </div>
+      </div>
+
+      <div id="aiResultState" style="display: none;">
+        <h3 style="margin-bottom: 20px;">Transformation Complete!</h3>
+        <div style="display: flex; gap: 20px; text-align: left;">
+          <div style="flex:1;">
+            <p style="margin-bottom: 5px; color: #aaa;">Before</p>
+            <div style="height: 200px; background: #333; border-radius: 8px; display: flex; align-items:center; justify-content:center; color:#666;">Original Room</div>
+          </div>
+          <div style="flex:1;">
+            <p style="margin-bottom: 5px; color: var(--accent);">After</p>
+            <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid var(--accent);">
+          </div>
+        </div>
+        <button class="btn mt-4" onclick="resetAiDemo()">Scan Another Room</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section id="products" class="p-section">
+    <h2 style="font-size: 40px; text-align: center; margin-bottom: 20px;">Curated <span class="accent-text">Collection</span></h2>
+    
+    <div style="text-align: center; margin-bottom: 40px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;" id="categoryFilters">
+      <button class="btn" onclick="filterCategory('All', this)">All</button>
+      <button class="btn btn-outline" onclick="filterCategory('Sofa', this)">Sofas</button>
+      <button class="btn btn-outline" onclick="filterCategory('Table', this)">Tables</button>
+      <button class="btn btn-outline" onclick="filterCategory('Chair', this)">Chairs</button>
+      <button class="btn btn-outline" onclick="filterCategory('Decor', this)">Decor</button>
+    </div>
+
+    <div class="product-grid" id="productContainer">
+      <!-- Loaded via JS -->
+      <p class="text-center" style="grid-column: 1/-1;">Loading premium selections...</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="p-section glass-dark" style="border-radius: 40px 40px 0 0; text-align: center; padding-bottom: 40px;">
+    <h2>Cross <span class="accent-text">Interior</span></h2>
+    <p style="color: #888; margin-top: 15px;">© 2026 Cross Interior — Redefining Living Spaces</p>
+  </footer>
+
+  <div id="notification"></div>
+
+  <script>
+    // System State
+    // System State
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let currentCategory = 'All';
+    let currentSearch = '';
+    let wishlist = [];
+    
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    // Dynamic Navigation
+    function updateHeader() {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      const name = localStorage.getItem('name');
+      const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      
+      const searchHtml = `
+        <li style="margin-right:20px;">
+          <input type="text" id="searchInput" placeholder="Search furniture..." onkeyup="handleSearch(this.value)" style="padding:8px 15px; border-radius:20px; border:none; background:rgba(255,255,255,0.1); color:white; outline:none; font-family:'Outfit', sans-serif;">
+        </li>
+      `;
+      
+      const navLinks = document.getElementById('navLinks');
+      
+      if (token && role === 'admin') {
+        navLinks.innerHTML = `
+          ${searchHtml}
+          <li><a href="#products" class="text-light">Shop</a></li>
+          <li><a href="admin.html" class="text-light" style="color:var(--accent-2);">Admin Panel</a></li>
+          <li><a href="#" onclick="logout(); return false;" class="text-light">Logout</a></li>
+        `;
+      } else if (token) {
+        navLinks.innerHTML = `
+          ${searchHtml}
+          <li><a href="#products" class="text-light">Shop</a></li>
+          <li><a href="cart.html" class="text-light">Cart (<span style="color:var(--primary)">${cartCount}</span>)</a></li>
+          <li><a href="profile.html" class="text-light" style="font-weight:bold;">Hi, ${name}</a></li>
+          <li><button class="btn btn-outline" style="padding: 8px 15px" onclick="logout()">Logout</button></li>
+        `;
+      } else {
+        navLinks.innerHTML = `
+          ${searchHtml}
+          <li><a href="#products" class="text-light">Shop</a></li>
+          <li><a href="cart.html" class="text-light">Cart (<span style="color:var(--primary)">${cartCount}</span>)</a></li>
+          <li><a href="login.html" class="text-light">Login</a></li>
+          <li><a href="signup.html" class="btn" style="padding: 8px 20px;">Sign Up</a></li>
+        `;
+      }
+
+      // Restore search input focus and value if it re-rendered while typing
+      const searchInput = document.getElementById('searchInput');
+      if(searchInput && currentSearch) {
+        searchInput.value = currentSearch;
+        searchInput.focus();
+      }
+    }
+
+    function logout() {
+      localStorage.clear(); // clears cart too, optionally just clear token/role/name
+      window.location.reload();
+    }
+
+    // Cart Logic
+    function addToCart(productId, name, price, image) {
+      const existing = cart.find(i => i._id === productId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ _id: productId, name, price, image, quantity: 1 });
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      updateHeader();
+      showNotification(`${name} added to cart!`);
+    }
+
+    function filterCategory(cat, btn) {
+      currentCategory = cat;
+      // Update active button styling
+      document.querySelectorAll('#categoryFilters button').forEach(b => {
+        b.className = 'btn btn-outline';
+      });
+      btn.className = 'btn';
+      loadProducts();
+    }
+
+    // Search Handler (Debounced)
+    let searchTimeout = null;
+    function handleSearch(val) {
+      if(searchTimeout) clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentSearch = val.trim();
+        loadProducts(); // Re-fetch from API with search param
+      }, 300); // 300ms debounce
+    }
+
+    // Load Products
+    async function loadProducts() {
+      const container = document.getElementById('productContainer');
+      container.innerHTML = `<p class="text-center" style="grid-column: 1/-1;">Loading...</p>`;
+      
+      try {
+        // Fetch User Wishlist if logged in
+        const token = localStorage.getItem('token');
+        if(token) {
+          const userRes = await fetch("/api/auth/me", { headers: { "auth-token": token } });
+          if(userRes.ok) {
+            const user = await userRes.json();
+            wishlist = (user.wishlist || []).map(w => w._id || w);
+          }
+        }
+
+        let url = currentCategory === 'All' ? '/api/products' : `/api/products?category=${currentCategory}`;
+        if(currentCategory !== 'All' && currentSearch) {
+          url += `&search=${encodeURIComponent(currentSearch)}`;
+        } else if (currentCategory === 'All' && currentSearch) {
+          url += `?search=${encodeURIComponent(currentSearch)}`;
+        }
+        
+        const res = await fetch(url);
+        const products = await res.json();
+        
+        let html = '';
+        products.forEach(p => {
+          const safeName = p.name || 'Premium Item';
+          const pName = safeName.replace(/'/g, "\\'");
+          const pPrice = p.price || 0;
+          const pDesc = p.description || 'Premium aesthetic furniture piece for modern living.';
+          
+          const inWishlist = wishlist.includes(p._id);
+          const heartIcon = inWishlist ? '❤️' : '🤍';
+          const isOutOfStock = p.stock <= 0;
+          
+          let addToCartBtn = isOutOfStock
+            ? `<button class="btn btn-outline" style="width:100%; border-color: #666; color: #666; cursor: not-allowed;" disabled>Out of Stock</button>`
+            : `<button class="btn" style="width:100%;" onclick="addToCart('${p._id}', '${pName}', ${pPrice}, '${p.image}')">Add to Cart</button>`;
+
+          html += `
+            <div class="product-card glass-dark" style="position:relative;">
+              <button onclick="toggleWishlist('${p._id}')" class="wishlist-btn" style="position:absolute; top:15px; left:15px; background:rgba(0,0,0,0.5); border:none; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; z-index:10; backdrop-filter:blur(5px); transition: transform 0.2s;">${heartIcon}</button>
+              <a href="product.html?id=${p._id}">
+                <img src="${p.image}" alt="${safeName}" onerror="this.src='https://images.unsplash.com/photo-1586023492125-27b2c045efd7'" style="cursor:pointer; transition: opacity 0.3s; ${isOutOfStock ? 'opacity: 0.5;' : ''}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='${isOutOfStock ? 0.5 : 1}'">
+              </a>
+              <h3 style="margin-bottom: 5px;"><a href="product.html?id=${p._id}" style="color:inherit; text-decoration:none;">${safeName}</a></h3>
+              <p style="color:#aaa; font-size:14px; margin-bottom: 15px; min-height:40px;">${pDesc}</p>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <span class="price-tag">₹${pPrice}</span>
+              </div>
+              ${addToCartBtn}
+            </div>
+          `;
+        });
+        
+        if(products.length === 0) {
+          html = `<p class="text-center" style="grid-column: 1/-1;">No products found in ${currentCategory}.</p>`;
+        }
+        
+        container.innerHTML = html;
+      } catch (err) {
+        console.error("Product Load Error:", err);
+        container.innerHTML = `<p class="text-center" style="grid-column: 1/-1; color:var(--primary);">Failed to load products. Error: ${err.message}</p>`;
+      }
+    }
+
+    async function toggleWishlist(productId) {
+      const token = localStorage.getItem('token');
+      if(!token) {
+        showNotification("Please login to use wishlists");
+        setTimeout(() => window.location='login.html', 1500);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/auth/wishlist/toggle/${productId}`, {
+          method: "POST",
+          headers: { "auth-token": token }
+        });
+        if(res.ok) {
+          wishlist = await res.json();
+          loadProducts(); // re-render hearts
+          showNotification("Wishlist updated!");
+        }
+      } catch(err) {
+        showNotification("Error updating wishlist");
+      }
+    }
+
+    // AI Demo Flow
+    function startAiDemo() {
+      if(!document.getElementById('roomUpload').files.length) return;
+      document.getElementById('aiUploadState').style.display = 'none';
+      document.getElementById('aiProcessingState').style.display = 'block';
+      let progress = 0;
+      const progressTracker = setInterval(() => {
+        progress += Math.random() * 20;
+        if(progress >= 100) {
+          progress = 100;
+          clearInterval(progressTracker);
+          setTimeout(() => {
+            document.getElementById('aiProcessingState').style.display = 'none';
+            document.getElementById('aiResultState').style.display = 'block';
+          }, 500);
+        }
+        document.getElementById('aiProgress').style.width = `${progress}%`;
+      }, 400);
+    }
+    
+    function resetAiDemo() {
+      document.getElementById('roomUpload').value = '';
+      document.getElementById('aiProgress').style.width = '0%';
+      document.getElementById('aiResultState').style.display = 'none';
+      document.getElementById('aiUploadState').style.display = 'block';
+    }
+
+    // Initialization
+    updateHeader();
+    loadProducts();
+  </script>
+</body>
+</html>-

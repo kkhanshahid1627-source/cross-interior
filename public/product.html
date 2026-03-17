@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading... | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="gradient-bg">
+
+  <nav>
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul id="navLinks">
+      <li><a href="index.html" class="text-light">Back to Shop</a></li>
+      <li><a href="cart.html" class="text-light">Cart</a></li>
+    </ul>
+  </nav>
+
+  <div class="pdp-container">
+    <div class="pdp-grid" id="pdpContent">
+      <p class="text-center" style="grid-column: 1/-1;">Loading product...</p>
+    </div>
+  </div>
+
+  <!-- Reviews Section -->
+  <div id="reviewsSection" style="display:none; max-width: 1100px; margin: 0 auto; padding: 0 20px 60px;">
+    <h2 style="margin-bottom: 25px;">Customer <span class="accent-text">Reviews</span></h2>
+
+    <!-- Add Review Form -->
+    <div class="glass-dark" style="padding: 30px; border-radius: 20px; margin-bottom: 30px;" id="addReviewBox">
+      <h3 style="margin-bottom: 15px;">Write a Review</h3>
+      <form onsubmit="submitReview(event)">
+        <div class="input-group">
+          <label>Rating</label>
+          <select id="reviewRating" required style="width:100%; padding:12px; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(255,255,255,0.05); color:white; font-family:'Outfit'; font-size:15px;">
+            <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+            <option value="4">⭐⭐⭐⭐ (4)</option>
+            <option value="3">⭐⭐⭐ (3)</option>
+            <option value="2">⭐⭐ (2)</option>
+            <option value="1">⭐ (1)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Your Review</label>
+          <textarea id="reviewComment" rows="3" required placeholder="Share your experience..." style="width:100%; padding:12px; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(255,255,255,0.05); color:white; font-family:'Outfit'; font-size:15px; resize:vertical;"></textarea>
+        </div>
+        <button type="submit" class="btn">Submit Review</button>
+      </form>
+    </div>
+
+    <!-- Reviews List -->
+    <div id="reviewsList" style="display:flex; flex-direction:column; gap:20px;">
+      <p>Loading reviews...</p>
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let currentProduct = null;
+
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    function updateHeader() {
+      const token = localStorage.getItem('token');
+      const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const navLinks = document.getElementById('navLinks');
+      
+      navLinks.innerHTML = `
+        <li><a href="index.html" class="text-light">Back to Shop</a></li>
+        <li><a href="cart.html" class="text-light">Cart (<span style="color:var(--primary)">${cartCount}</span>)</a></li>
+      `;
+    }
+
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+
+      if (!id) {
+        document.getElementById('pdpContent').innerHTML = `<h2 class="text-center" style="grid-column:1/-1;">Product Not Found</h2><a href="index.html" class="btn text-center" style="grid-column:1/-1; width:fit-content; margin:auto;">Return Home</a>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        if (!res.ok) throw new Error("Not found");
+        
+        currentProduct = await res.json();
+        
+        const safeName = currentProduct.name || 'Premium Item';
+        const pDesc = currentProduct.description || 'Premium aesthetic furniture piece for modern living. Elevate your space with this stunning addition.';
+        const category = currentProduct.category || 'Uncategorized';
+        
+        document.title = `${safeName} | Cross Interior`;
+
+        // Fetch Reviews to get average rating
+        const revRes = await fetch(`/api/reviews/${id}`);
+        let avgRatingHtml = '';
+        if(revRes.ok) {
+           const reviews = await revRes.json();
+           if(reviews.length > 0) {
+             const sum = reviews.reduce((a,b) => a + b.rating, 0);
+             const avg = (sum / reviews.length).toFixed(1);
+             avgRatingHtml = `<div style="color:#f39c12; font-size:20px; margin-bottom:20px;">★ ${avg} <span style="color:#aaa; font-size:14px;">(${reviews.length} reviews)</span></div>`;
+           } else {
+             avgRatingHtml = `<div style="color:#aaa; font-size:14px; margin-bottom:20px;">No reviews yet</div>`;
+           }
+        }
+
+        document.getElementById('pdpContent').innerHTML = `
+          <div class="pdp-image-container">
+            <img src="${currentProduct.image}" alt="${safeName}" onerror="this.src='https://images.unsplash.com/photo-1586023492125-27b2c045efd7'">
+          </div>
+          <div class="pdp-details">
+            <span class="badge">${category}</span>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px;">
+              <h1 class="pdp-title" style="margin-bottom:0;">${safeName}</h1>
+              <button onclick="toggleWishlist('${currentProduct._id}')" id="pdpHeartBtn" style="background:rgba(0,0,0,0.1); border:none; border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:24px; transition: transform 0.2s;">
+                🤍
+              </button>
+            </div>
+            ${avgRatingHtml}
+            <div class="pdp-price">₹${currentProduct.price || 0}</div>
+            <p class="pdp-desc">${pDesc}</p>
+            
+            <div style="display:flex; gap:15px;">
+              ${currentProduct.stock > 0 
+                ? `<button class="btn" style="flex:1; font-size:18px; padding:15px;" onclick="addCurrentToCart()">Add to Cart</button>`
+                : `<button class="btn btn-outline" style="flex:1; font-size:18px; padding:15px; border-color: #666; color: #666; cursor: not-allowed;" disabled>Out of Stock</button>`}
+            </div>
+            
+            <div style="margin-top:40px; border-top:1px solid rgba(0,0,0,0.1); padding-top:20px;">
+              <p style="color:#666; font-size:14px;">✓ Free Premium Delivery<br>✓ 30-Day Returns<br>✓ 5-Year Warranty</p>
+            </div>
+          </div>
+        `;
+        
+        document.getElementById('reviewsSection').style.display = 'block';
+        loadReviews();
+
+        // Check wishlist
+        const token = localStorage.getItem('token');
+        if(token) {
+          const userRes = await fetch("/api/auth/me", { headers: { "auth-token": token } });
+          if(userRes.ok) {
+            const user = await userRes.json();
+            const wl = (user.wishlist || []).map(w => w._id || w);
+            if(wl.includes(currentProduct._id)) {
+              document.getElementById('pdpHeartBtn').innerHTML = '❤️';
+            }
+          }
+        }
+        if(!token) {
+          document.getElementById('addReviewBox').style.display = 'none';
+        }
+
+      } catch(err) {
+        document.getElementById('pdpContent').innerHTML = `<h2 class="text-center" style="grid-column:1/-1; color:var(--primary);">Product Not Found</h2><a href="index.html" class="btn text-center" style="grid-column:1/-1; width:fit-content; margin:auto;">Return Home</a>`;
+      }
+    }
+
+    function addCurrentToCart() {
+      if(!currentProduct || currentProduct.stock <= 0) return;
+      const existing = cart.find(i => i._id === currentProduct._id);
+      
+      if (existing) {
+        if (existing.quantity >= currentProduct.stock) {
+          showNotification(`Only ${currentProduct.stock} left in stock.`);
+          return;
+        }
+        existing.quantity += 1;
+      } else {
+        cart.push({ 
+          _id: currentProduct._id, 
+          name: currentProduct.name || 'Premium Item', 
+          price: currentProduct.price || 0, 
+          image: currentProduct.image, 
+          quantity: 1 
+        });
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      updateHeader();
+      showNotification(`${currentProduct.name || 'Item'} added to cart!`);
+    }
+
+    async function toggleWishlist(productId) {
+      const token = localStorage.getItem('token');
+      if(!token) {
+        showNotification("Please login to use wishlists");
+        setTimeout(() => window.location='login.html', 1500);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/auth/wishlist/toggle/${productId}`, {
+          method: "POST",
+          headers: { "auth-token": token }
+        });
+        if(res.ok) {
+          const wl = await res.json();
+          const heartBtn = document.getElementById('pdpHeartBtn');
+          heartBtn.innerHTML = wl.includes(productId) ? '❤️' : '🤍';
+          showNotification("Wishlist updated!");
+        }
+      } catch(err) {
+        showNotification("Error updating wishlist");
+      }
+    }
+
+    async function loadReviews() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      const list = document.getElementById('reviewsList');
+      try {
+        const res = await fetch(`/api/reviews/${id}`);
+        const reviews = await res.json();
+        if(reviews.length === 0) {
+          list.innerHTML = `<p style="color:#aaa;">No reviews yet. Be the first to share your thoughts!</p>`;
+          return;
+        }
+        list.innerHTML = reviews.map(r => `
+          <div class="glass-dark" style="padding: 20px; border-radius: 16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+              <strong>${r.user ? r.user.name : 'Anonymous'}</strong>
+              <span style="color:#f39c12;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+            </div>
+            <p style="color:#ccc;">${r.comment}</p>
+            <p style="color:#666; font-size:12px; margin-top:8px;">${new Date(r.createdAt).toLocaleDateString()}</p>
+          </div>
+        `).join('');
+      } catch(err) {
+        list.innerHTML = '<p>Could not load reviews.</p>';
+      }
+    }
+
+    async function submitReview(e) {
+      e.preventDefault();
+      const token = localStorage.getItem('token');
+      if(!token) { showNotification("Please login first"); return; }
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('id');
+      const rating = Number(document.getElementById('reviewRating').value);
+      const comment = document.getElementById('reviewComment').value;
+
+      try {
+        const res = await fetch("/api/reviews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "auth-token": token },
+          body: JSON.stringify({ productId, rating, comment })
+        });
+        if(res.ok) {
+          showNotification("Review submitted!");
+          document.getElementById('reviewComment').value = '';
+          loadReviews();
+          loadProduct(); // Refresh avg rating
+        } else {
+          showNotification("Failed to submit review");
+        }
+      } catch(err) {
+        showNotification("Error submitting review");
+      }
+    }
+
+    updateHeader();
+    loadProduct();
+  </script>
+</body>
+</html>

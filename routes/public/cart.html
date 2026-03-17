@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .cart-container {
+      max-width: 1000px;
+      margin: 100px auto 50px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+    }
+    .cart-items {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .cart-item {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 15px;
+    }
+    .cart-item img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .item-details {
+      flex: 1;
+    }
+    .item-price {
+      font-weight: bold;
+      color: var(--primary);
+      font-size: 18px;
+    }
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .qty-btn {
+      background: rgba(0,0,0,0.05);
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--text-dark);
+    }
+    .summary {
+      padding: 30px;
+      height: fit-content;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      font-size: 24px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="mixed-bg">
+
+  <nav class="glass">
+    <a href="index.html" class="logo">Cross <span class="accent-text">Interior</span></a>
+    <ul id="navLinks">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="cart.html" class="active">Cart (<span id="cartCount">0</span>)</a></li>
+    </ul>
+  </nav>
+
+  <div class="cart-container">
+    <div class="cart-items" id="cartItemsList">
+      <!-- Injected via JS -->
+    </div>
+    
+    <div class="summary glass">
+      <h3 style="margin-bottom: 20px;">Order Summary</h3>
+      <div class="summary-row">
+        <span>Subtotal</span>
+        <span id="subtotalPrice">₹0</span>
+      </div>
+      <div class="summary-row">
+        <span>Delivery</span>
+        <span>Free</span>
+      </div>
+      <div class="summary-total">
+        <span>Total</span>
+        <span id="totalPrice" class="accent-text">₹0</span>
+      </div>
+      <a href="checkout.html" class="btn" style="width: 100%; text-align: center; margin-top: 30px; font-size: 18px; padding: 15px;">Proceed to Checkout</a>
+    </div>
+  </div>
+
+  <script>
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+    function updateHeader() {
+      const name = localStorage.getItem('name');
+      const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+      document.getElementById('cartCount').textContent = count;
+      
+      const navLinks = document.getElementById('navLinks');
+      if (name) {
+        navLinks.innerHTML = `
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#products">Shop</a></li>
+          <li><a href="cart.html" class="active">Cart (<span id="cartCountHeader">${count}</span>)</a></li>
+          <li><a href="#" onclick="logout()">Logout (${name})</a></li>
+        `;
+      } else {
+        navLinks.innerHTML = `
+          <li><a href="index.html">Home</a></li>
+          <li><a href="login.html">Login</a></li>
+          <li><a href="signup.html" class="btn">Sign Up</a></li>
+        `;
+      }
+    }
+
+    function logout(){
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('name');
+      window.location = "index.html";
+    }
+
+    function renderCart() {
+      const list = document.getElementById('cartItemsList');
+      if (cart.length === 0) {
+        list.innerHTML = `<div class="glass" style="padding: 40px; text-align: center;">
+                            <h2>Your cart is empty</h2>
+                            <br>
+                            <a href="index.html#products" class="btn">Start Shopping</a>
+                          </div>`;
+        document.getElementById('subtotalPrice').textContent = "₹0";
+        document.getElementById('totalPrice').textContent = "₹0";
+        return;
+      }
+
+      let html = '';
+      let total = 0;
+      
+      cart.forEach((item, index) => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        html += `
+          <div class="cart-item glass">
+            <img src="${item.image}" alt="${item.name}">
+            <div class="item-details">
+              <h3>${item.name}</h3>
+              <p class="item-price">₹${item.price}</p>
+            </div>
+            <div class="qty-control">
+              <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
+              <span>${item.quantity}</span>
+              <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+            </div>
+            <button class="qty-btn" style="color:red; margin-left:20px;" onclick="removeItem(${index})">X</button>
+          </div>
+        `;
+      });
+      
+      list.innerHTML = html;
+      document.getElementById('subtotalPrice').textContent = `₹${total}`;
+      document.getElementById('totalPrice').textContent = `₹${total}`;
+      document.getElementById('cartCount').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+      
+      const hdrCount = document.getElementById('cartCountHeader');
+      if(hdrCount) hdrCount.textContent = document.getElementById('cartCount').textContent;
+    }
+
+    function updateQty(index, delta) {
+      cart[index].quantity += delta;
+      if (cart[index].quantity <= 0) {
+        cart.splice(index, 1);
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderCart();
+    }
+
+    function removeItem(index) {
+      cart.splice(index, 1);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderCart();
+    }
+
+    updateHeader();
+    renderCart();
+  </script>
+</body>
+</html>

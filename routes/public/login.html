@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="gradient-bg">
+
+  <nav class="glass-dark" style="background: rgba(0,0,0,0.2); border:none; border-bottom:1px solid rgba(255,255,255,0.1); position:absolute; width:100%;">
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul>
+      <li><a href="signup.html" class="text-light">Sign Up</a></li>
+    </ul>
+  </nav>
+
+  <div class="form-container">
+    <div class="form-box glass-dark">
+      <h2>Welcome <span class="accent-text">Back</span></h2>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="email" required placeholder="Enter your email">
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="password" required placeholder="Enter your password">
+        </div>
+        <button type="submit" class="btn">Login</button>
+      </form>
+      <div class="form-footer">
+        <a href="reset.html" style="display:block; margin-bottom: 10px; color:#aaa;">Forgot Password?</a>
+        Don't have an account? <a href="signup.html">Create one</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('role', data.role);
+          localStorage.setItem('name', data.name);
+          
+          showNotification(`Welcome back, ${data.name}!`);
+          
+          setTimeout(() => {
+            if(data.role === 'admin') {
+              window.location = "admin.html";
+            } else {
+              window.location = "index.html";
+            }
+          }, 1000);
+        } else {
+          showNotification(data, true);
+        }
+      } catch (err) {
+        showNotification("Network error", true);
+      }
+    }
+
+    function showNotification(msg, isError = false) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.style.background = isError ? '#FF4B2B' : '#4FACFE';
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>

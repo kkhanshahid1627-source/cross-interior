@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="gradient-bg">
+
+  <div class="admin-layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar glass-dark" style="border-radius: 0;">
+      <a href="index.html" class="logo text-light" style="margin-bottom: 30px; display: block;">Cross <span class="accent-text">Interior</span></a>
+      <button class="active" onclick="showPanel('addProductPanel', this)">➕ Add Product</button>
+      <button onclick="showPanel('viewProductsPanel', this); loadProducts()">📦 View Products</button>
+      <button onclick="showPanel('viewOrdersPanel', this); loadOrders()">📋 Customer Orders</button>
+      <button onclick="showPanel('analyticsPanel', this); loadAnalytics()">📊 Analytics</button>
+      <div style="flex:1;"></div>
+      <button onclick="logout()" style="border-color: var(--accent-2); color: var(--accent-2);">🚪 Logout</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="admin-main">
+      <!-- ADD PRODUCT -->
+      <div id="addProductPanel" class="dashboard-panel active">
+        <h2>Add New <span class="accent-text">Product</span></h2>
+        <div class="card" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; padding:30px; margin-top:20px;">
+          <div class="input-group">
+            <label>Product Name</label>
+            <input type="text" id="p_name" placeholder="Modern Velvet Sofa">
+          </div>
+          <div class="input-group">
+            <label>Price (₹)</label>
+            <input type="number" id="p_price" placeholder="12999">
+          </div>
+          <div class="input-group">
+            <label>Image URL</label>
+            <input type="text" id="p_image" placeholder="https://...">
+          </div>
+          <div class="input-group">
+            <label>Description</label>
+            <input type="text" id="p_desc" placeholder="A comfortable sofa...">
+          </div>
+          <div class="input-group" style="grid-column: 1/-1;">
+            <label>Initial Stock Count</label>
+            <input type="number" id="p_stock" min="0" value="10">
+          </div>
+          <button class="btn" onclick="addProduct()">Add Product</button>
+        </div>
+      </div>
+
+      <!-- VIEW PRODUCTS -->
+      <div id="viewProductsPanel" class="dashboard-panel">
+        <h2>Manage <span class="accent-text">Products</span></h2>
+        <div class="grid" id="adminProductsGrid">
+           <!-- Loaded via JS -->
+        </div>
+      </div>
+
+      <!-- VIEW ORDERS -->
+      <div id="viewOrdersPanel" class="dashboard-panel">
+        <h2>Customer <span class="accent-text">Orders</span></h2>
+        <div class="grid" id="adminOrdersGrid" style="grid-template-columns: 1fr;">
+           <!-- Loaded via JS -->
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div id="analyticsPanel" class="dashboard-panel">
+        <h2>Sales <span class="accent-text">Analytics</span></h2>
+        <div class="stat-grid">
+          <div class="stat-card glass-dark">
+            <h3>Total Revenue</h3>
+            <div class="stat-value" id="totalRevenueStat">₹0</div>
+          </div>
+          <div class="stat-card glass-dark">
+            <h3>Total Orders</h3>
+            <div class="stat-value" id="totalOrdersStat">0</div>
+          </div>
+        </div>
+        <div class="glass-dark" style="padding: 30px; border-radius: 20px; height: 350px;">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    // Security check
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    
+    if(!token || role !== 'admin') {
+      window.location = "login.html";
+    }
+
+    function showPanel(panelId, btnElement) {
+      document.querySelectorAll('.dashboard-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+      document.getElementById(panelId).classList.add('active');
+      if(btnElement) btnElement.classList.add('active');
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location = "login.html";
+    }
+
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    async function addProduct() {
+      const name = document.getElementById('p_name').value;
+      const price = document.getElementById('p_price').value;
+      const image = document.getElementById('p_image').value;
+      const description = document.getElementById('p_desc').value;
+      const stock = document.getElementById('p_stock').value;
+
+      try {
+        const res = await fetch("/api/products/add", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "auth-token": token
+          },
+          body: JSON.stringify({ name, price, image, description, stock: Number(stock) })
+        });
+        
+        if (res.ok) {
+          showNotification("Product Added Successfully!");
+          document.querySelectorAll('input').forEach(i => i.value = '');
+        } else {
+          showNotification("Failed to add product.");
+        }
+      } catch(err) {
+        showNotification("Error adding product");
+      }
+    }
+
+    async function loadProducts() {
+      const grid = document.getElementById('adminProductsGrid');
+      grid.innerHTML = "<p>Loading...</p>";
+      try {
+        const res = await fetch("/api/products");
+        const products = await res.json();
+        
+        let html = '';
+        products.forEach(p => {
+          html += `
+            <div class="card">
+              <img src="${p.image}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+              <h3>${p.name}</h3>
+              <p style="color:var(--accent); font-size:18px; font-weight:bold; margin: 10px 0;">₹${p.price}</p>
+              <p style="color:#aaa; font-size:13px; margin-bottom: 10px;">Stock: ${p.stock !== undefined ? p.stock : 'N/A'}</p>
+              <button class="btn btn-outline" style="width:100%" onclick="deleteProduct('${p._id}')">Delete</button>
+            </div>
+          `;
+        });
+        grid.innerHTML = html || "<p>No products found.</p>";
+      } catch(err) {
+        grid.innerHTML = "<p>Error loading products.</p>";
+      }
+    }
+
+    async function deleteProduct(id) {
+      if(!confirm("Are you sure?")) return;
+      try {
+        await fetch(`/api/products/${id}`, {
+          method: "DELETE",
+          headers: { "auth-token": token }
+        });
+        showNotification("Product deleted");
+        loadProducts();
+      } catch(err) {
+        showNotification("Error deleting");
+      }
+    }
+
+    async function loadOrders() {
+      const grid = document.getElementById('adminOrdersGrid');
+      grid.innerHTML = "<p>Loading...</p>";
+      try {
+        const res = await fetch("/api/orders/all", {
+          headers: { "auth-token": token }
+        });
+        const orders = await res.json();
+        
+        let html = '';
+        orders.forEach(o => {
+          const itemsList = o.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+          html += `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3 style="color:var(--accent)">Order #${o._id.substring(18)}</h3>
+                <p><strong>Customer:</strong> ${o.user.name} (${o.user.email})</p>
+                <p><strong>Items:</strong> ${itemsList}</p>
+                <p><strong>Address:</strong> ${o.shippingAddress}</p>
+                <p><strong>Date:</strong> ${new Date(o.createdAt).toLocaleString()}</p>
+              </div>
+              <div style="text-align:right;">
+                <h2 style="color:var(--primary)">₹${o.totalAmount}</h2>
+                <select class="btn btn-outline" style="margin-top:10px; padding:5px; background:#222; color:#fff;" onchange="updateOrderStatus('${o._id}', this.value)">
+                  <option value="Completed" ${o.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                  <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
+                  <option value="Shipped" ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+                  <option value="Delivered" ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                </select>
+              </div>
+            </div>
+          `;
+        });
+        grid.innerHTML = html || "<p>No orders found.</p>";
+      } catch(err) {
+        grid.innerHTML = "<p>Error loading orders.</p>";
+      }
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+      try {
+        const res = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'auth-token': token
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if(res.ok) {
+          showNotification("Order status updated!");
+        } else {
+          showNotification("Failed to update status.");
+          loadOrders();
+        }
+      } catch (err) {
+        showNotification("Error updating status.");
+        loadOrders();
+      }
+    }
+
+    // Load Analytics
+    let chartInstance = null;
+    async function loadAnalytics() {
+      try {
+        const res = await fetch("/api/orders/analytics", { headers: { 'auth-token': token } });
+        if(!res.ok) throw new Error("Unauthorized");
+        
+        const data = await res.json();
+        document.getElementById('totalRevenueStat').textContent = `₹${data.totalRevenue}`;
+        document.getElementById('totalOrdersStat').textContent = data.totalOrders;
+
+        const dates = Object.keys(data.salesByDate).sort();
+        const revenues = dates.map(d => data.salesByDate[d]);
+
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        
+        if(chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: dates.length ? dates : ['No Data'],
+            datasets: [{
+              label: 'Daily Revenue (₹)',
+              data: revenues.length ? revenues : [0],
+              borderColor: '#6a11cb',
+              backgroundColor: 'rgba(106, 17, 203, 0.2)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: '#fff' }
+              }
+            },
+            scales: {
+              x: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+              y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+          }
+        });
+      } catch(err) {
+        console.error("Analytics Error:", err);
+      }
+    }
+
+    // Init
+    loadProducts();
+  </script>
+</body>
+</html>

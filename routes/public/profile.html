@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .profile-container {
+      max-width: 1000px;
+      margin: 120px auto 50px;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 30px;
+    }
+    .profile-sidebar {
+      padding: 30px;
+      height: fit-content;
+      text-align: center;
+    }
+    .profile-sidebar input {
+      margin-bottom: 20px;
+    }
+    .order-history {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .order-card {
+      padding: 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body class="mixed-bg">
+
+  <nav class="glass">
+    <a href="index.html" class="logo">Cross <span class="accent-text">Interior</span></a>
+    <ul id="navLinks">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="cart.html">Cart</a></li>
+    </ul>
+  </nav>
+
+  <div class="profile-container">
+    
+    <!-- Profile Info -->
+    <div class="profile-sidebar glass">
+      <div style="width: 100px; height: 100px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 20px;" id="avatarInitial">
+        U
+      </div>
+      <h3 style="margin-bottom: 5px;" id="userName">Loading...</h3>
+      <p style="color: #666; margin-bottom: 30px;" id="userEmail">loading@email.com</p>
+
+      <hr style="border:none; border-top:1px solid rgba(0,0,0,0.1); margin-bottom:20px;">
+      
+      <h4 style="text-align:left; margin-bottom:15px;">Update Details</h4>
+      <input type="text" id="editName" class="input-light" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" placeholder="Full Name">
+      <button class="btn" style="width:100%;" onclick="updateProfile()">Save Changes</button>
+      
+      <button class="btn btn-outline" style="width:100%; margin-top:15px; border-color: #666; color: #666!important;" onclick="logout()">Sign Out</button>
+    </div>
+
+    <!-- Order History -->
+    <div>
+      <h2 style="margin-bottom: 20px;">Order <span class="accent-text">History</span></h2>
+      <div class="order-history" id="ordersList" style="margin-bottom: 50px;">
+        <p>Loading your past orders...</p>
+      </div>
+
+      <h2 style="margin-bottom: 20px;">My <span class="accent-text">Wishlist</span></h2>
+      <div class="product-grid" id="wishlistContainer" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+        <p>Loading wishlist...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if(!token) {
+      window.location = "login.html";
+    }
+
+    function showNotification(msg) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location = "index.html";
+    }
+
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/auth/me", {
+          headers: { "auth-token": token }
+        });
+        const user = await res.json();
+        
+        document.getElementById('userName').textContent = user.name;
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('editName').value = user.name;
+        document.getElementById('avatarInitial').textContent = user.name.charAt(0).toUpperCase();
+        
+        // Update header link
+        document.getElementById('navLinks').innerHTML = `
+          <li><a href="index.html">Home</a></li>
+          <li><a href="cart.html">Cart</a></li>
+          <li><a href="profile.html" class="active" style="color:var(--primary)">Hi, ${user.name}</a></li>
+        `;
+
+        // Render Wishlist
+        const wlContainer = document.getElementById('wishlistContainer');
+        if(!user.wishlist || user.wishlist.length === 0) {
+          wlContainer.innerHTML = `<div class="glass" style="padding: 20px; text-align: center; grid-column:1/-1;">Your wishlist is empty.</div>`;
+        } else {
+          let wlHtml = '';
+          user.wishlist.forEach(p => {
+             const safeName = p.name || 'Premium Item';
+             wlHtml += `
+               <div class="product-card glass-dark" style="position:relative;">
+                  <button onclick="removeFromWishlist('${p._id}')" class="wishlist-btn" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.5); border:none; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; z-index:10;">❌</button>
+                  <a href="product.html?id=${p._id}">
+                    <img src="${p.image}" onerror="this.src='https://images.unsplash.com/photo-1586023492125-27b2c045efd7'" style="height:150px;">
+                  </a>
+                  <h4 style="margin-bottom: 5px; font-size:16px;"><a href="product.html?id=${p._id}" style="color:inherit; text-decoration:none;">${safeName}</a></h4>
+                  <span class="price-tag" style="font-size:16px;">₹${p.price || 0}</span>
+               </div>
+             `;
+          });
+          wlContainer.innerHTML = wlHtml;
+        }
+
+      } catch(err) {
+        showNotification("Failed to load profile");
+      }
+    }
+
+    async function updateProfile() {
+      const newName = document.getElementById('editName').value;
+      try {
+        const res = await fetch("/api/auth/update", {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+            "auth-token": token
+          },
+          body: JSON.stringify({ name: newName })
+        });
+        const updated = await res.json();
+        if(res.ok) {
+          localStorage.setItem('name', updated.name);
+          showNotification("Profile updated effectively!");
+          loadProfile();
+        }
+      } catch(err) {
+        showNotification("Update failed");
+      }
+    }
+
+    async function removeFromWishlist(productId) {
+      try {
+        const res = await fetch(`/api/auth/wishlist/toggle/${productId}`, {
+          method: "POST", headers: { "auth-token": token }
+        });
+        if(res.ok) {
+          showNotification("Removed from wishlist");
+          loadProfile(); // refresh wishlist display
+        }
+      } catch (err) { }
+    }
+
+    async function loadOrders() {
+      const list = document.getElementById('ordersList');
+      try {
+        const res = await fetch("/api/orders/my-orders", {
+          headers: { "auth-token": token }
+        });
+        const orders = await res.json();
+        
+        if(orders.length === 0) {
+          list.innerHTML = `<div class="glass" style="padding: 40px; text-align: center;">You haven't placed any orders yet. <br><br><a href="index.html#products" class="btn">Shop Now</a></div>`;
+          return;
+        }
+
+        let html = '';
+        orders.forEach(o => {
+          const items = o.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+          const date = new Date(o.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+          
+          let statusColor = '#333';
+          if(o.status === 'Completed') statusColor = 'var(--primary)';
+          if(o.status === 'Processing') statusColor = '#f39c12';
+          if(o.status === 'Shipped') statusColor = '#3498db';
+          if(o.status === 'Delivered') statusColor = '#2ecc71';
+
+          html += `
+            <div class="order-card glass">
+              <div>
+                <h3 style="margin-bottom: 5px; color:var(--text-dark);">Order #${o._id.substring(18).toUpperCase()}</h3>
+                <p style="color:#666; font-size:14px; margin-bottom: 10px;">Placed on ${date}</p>
+                <p style="font-size: 15px;"><strong>Items:</strong> ${items}</p>
+                <p style="font-size: 15px; margin-top: 5px;"><strong>Delivering to:</strong> ${o.shippingAddress}</p>
+              </div>
+              <div style="text-align: right;">
+                <h2 class="accent-text" style="margin-bottom: 10px;">₹${o.totalAmount}</h2>
+                <span class="status-badge" style="background:${statusColor}; color:white; padding:5px 12px; border-radius:15px; font-size:14px;">${o.status}</span>
+              </div>
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+      } catch(err) {
+        list.innerHTML = "Failed to load orders.";
+      }
+    }
+
+    loadProfile();
+    loadOrders();
+  </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | Cross Interior</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="gradient-bg">
+
+  <nav class="glass-dark" style="background: rgba(0,0,0,0.2); border:none; border-bottom:1px solid rgba(255,255,255,0.1); position:absolute; width:100%;">
+    <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <ul>
+      <li><a href="login.html" class="text-light">Login</a></li>
+    </ul>
+  </nav>
+
+  <div class="form-container">
+    <div class="form-box glass-dark">
+      <h2>Create an <span class="accent-text">Account</span></h2>
+      <form id="signupForm" onsubmit="handleSignup(event)">
+        <div class="input-group">
+          <label>Full Name</label>
+          <input type="text" id="name" required placeholder="John Doe">
+        </div>
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="email" required placeholder="john@example.com">
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="password" required placeholder="Create a strong password">
+        </div>
+        <button type="submit" class="btn">Sign Up</button>
+      </form>
+      <div class="form-footer">
+        Already have an account? <a href="login.html">Login here</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    async function handleSignup(e) {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showNotification("Account created effectively! Redirecting...");
+          setTimeout(() => window.location = "login.html", 1500);
+        } else {
+          showNotification(data, true);
+        }
+      } catch (err) {
+        showNotification("Something went wrong", true);
+      }
+    }
+
+    function showNotification(msg, isError = false) {
+      const notif = document.getElementById('notification');
+      notif.textContent = msg;
+      notif.style.background = isError ? '#FF4B2B' : '#4FACFE';
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>
