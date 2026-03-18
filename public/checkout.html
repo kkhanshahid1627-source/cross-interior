@@ -10,6 +10,9 @@
 
   <nav>
     <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <button class="hamburger" onclick="this.classList.toggle('active'); document.querySelector('nav ul').classList.toggle('mobile-open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <ul>
       <li><a href="cart.html" class="text-light">Back to Cart</a></li>
     </ul>
@@ -37,7 +40,7 @@
         </div>
         
         <h3 style="margin: 20px 0 15px; color: var(--primary-light);">Payment Details</h3>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+        <div class="checkout-payment-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
           <div class="input-group" style="grid-column: 1/-1;">
             <label>Card Number</label>
             <input type="text" placeholder="4242 4242 4242 4242" maxlength="19" required>

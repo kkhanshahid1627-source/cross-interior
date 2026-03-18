@@ -10,6 +10,9 @@
 
   <nav>
     <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <button class="hamburger" onclick="this.classList.toggle('active'); document.getElementById('navLinks').classList.toggle('mobile-open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <ul id="navLinks">
       <li><a href="index.html" class="text-light">Back to Shop</a></li>
     </ul>
@@ -21,7 +24,7 @@
       <p>Your cart is empty.</p>
     </div>
     <div id="cartSummary" style="display:none; margin-top: 30px; padding: 30px; border-top: 1px solid rgba(255,255,255,0.1);">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="cart-summary-row" style="display:flex; justify-content:space-between; align-items:center;">
         <h2>Total: <span id="cartTotal" class="accent-text">₹0</span></h2>
         <a href="checkout.html" class="btn" style="font-size:18px; padding:15px 35px;">Proceed to Checkout</a>
       </div>

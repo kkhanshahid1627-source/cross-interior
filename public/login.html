@@ -10,6 +10,9 @@
 
   <nav class="glass-dark" style="background: rgba(0,0,0,0.2); border:none; border-bottom:1px solid rgba(255,255,255,0.1); position:absolute; width:100%;">
     <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <button class="hamburger" onclick="this.classList.toggle('active'); document.querySelector('nav ul').classList.toggle('mobile-open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <ul>
       <li><a href="signup.html" class="text-light">Sign Up</a></li>
     </ul>

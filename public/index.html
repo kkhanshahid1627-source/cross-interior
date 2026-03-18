@@ -11,6 +11,9 @@
 
   <nav>
     <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <button class="hamburger" onclick="this.classList.toggle('active'); document.getElementById('navLinks').classList.toggle('mobile-open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <ul id="navLinks">
       <li><a href="login.html" class="text-light">Login</a></li>
     </ul>
@@ -24,7 +27,7 @@
   </section>
 
   <!-- AI DESIGN DEMO -->
-  <section class="ai-section glass-dark" style="margin: 0 40px 40px; border-radius: 20px; padding: 50px;">
+  <section class="ai-section ai-section-wrap glass-dark" style="margin: 0 40px 40px; border-radius: 20px; padding: 50px;">
     <h2 style="font-size: 28px; margin-bottom: 10px;">🤖 AI Room <span class="accent-text">Transformation</span></h2>
     <p style="color:#aaa; margin-bottom: 30px;">Upload your room photo and let our AI design engine reimagine it with our furniture.</p>
     <div id="aiUploadState">
@@ -69,7 +72,7 @@
     let currentSearch = '';
     let wishlist = [];
 
-    const searchHtml = `<li><input type="text" id="searchInput" placeholder="Search products..." oninput="handleSearch(this.value)" style="padding:8px 14px; border:1px solid rgba(255,255,255,0.2); border-radius:10px; background:rgba(255,255,255,0.05); color:white; font-family:'Outfit'; font-size:14px; width:200px;" /></li>`;
+    const searchHtml = `<li style="width:100%;"><input type="text" id="searchInput" placeholder="Search products..." oninput="handleSearch(this.value)" style="padding:8px 14px; border:1px solid rgba(255,255,255,0.2); border-radius:10px; background:rgba(255,255,255,0.05); color:white; font-family:'Outfit'; font-size:14px; width:100%; max-width:200px;" /></li>`;
 
     function showNotification(msg) {
       const notif = document.getElementById('notification');

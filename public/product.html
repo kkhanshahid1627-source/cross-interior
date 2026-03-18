@@ -10,6 +10,9 @@
 
   <nav>
     <a href="index.html" class="logo text-light">Cross <span class="accent-text">Interior</span></a>
+    <button class="hamburger" onclick="this.classList.toggle('active'); document.getElementById('navLinks').classList.toggle('mobile-open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <ul id="navLinks">
       <li><a href="index.html" class="text-light">Back to Shop</a></li>
       <li><a href="cart.html" class="text-light">Cart</a></li>
@@ -23,7 +26,7 @@
   </div>
 
   <!-- Reviews Section -->
-  <div id="reviewsSection" style="display:none; max-width: 1100px; margin: 0 auto; padding: 0 20px 60px;">
+  <div id="reviewsSection" class="reviews-section-wrap" style="display:none; max-width: 1100px; margin: 0 auto; padding: 0 20px 60px;">
     <h2 style="margin-bottom: 25px;">Customer <span class="accent-text">Reviews</span></h2>
 
     <!-- Add Review Form -->
