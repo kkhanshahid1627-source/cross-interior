@@ -24,8 +24,21 @@
       <p style="color: #aaa; margin-bottom: 25px;">Complete your order below</p>
       
       <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 14px; margin-bottom: 25px;">
-        <h3 style="margin-bottom: 10px;">Order Summary</h3>
-        <div id="checkoutItemsList" style="color:#aaa;"></div>
+        <h3 style="margin-bottom: 15px;">Order Summary</h3>
+        <div id="checkoutItemsList" style="color:#aaa; display:flex; flex-direction:column; gap:10px;"></div>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+          <span>Subtotal:</span><span id="coSubtotal">₹0</span>
+        </div>
+        <div id="coDiscountRow" style="display:flex; justify-content:space-between; margin-bottom: 5px; color:#2ecc71; display:none;">
+          <span>Discount (10%):</span><span id="coDiscount">-₹0</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+          <span>Shipping:</span><span id="coShipping">₹500</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+          <span>Tax (18%):</span><span id="coTax">₹0</span>
+        </div>
         <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
         <div style="display:flex; justify-content:space-between;">
           <span style="font-size: 18px; font-weight: 600;">Total:</span>
@@ -43,7 +56,7 @@
         <div class="checkout-payment-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
           <div class="input-group" style="grid-column: 1/-1;">
             <label>Card Number</label>
-            <input type="text" placeholder="4242 4242 4242 4242" maxlength="19" required>
+            <input type="text" id="ccNum" placeholder="4242 4242 4242 4242" maxlength="19" required>
           </div>
           <div class="input-group">
             <label>Expiry</label>
@@ -51,7 +64,7 @@
           </div>
           <div class="input-group">
             <label>CVC</label>
-            <input type="text" placeholder="123" maxlength="4" required>
+            <input type="text" id="ccCvc" placeholder="123" maxlength="4" required>
           </div>
         </div>
         <p style="font-size:12px; color:#666; margin-bottom:15px;">Demo environment: Stripe keys invalid. Mock payment simulated on submit.</p>
@@ -88,17 +101,54 @@
     }
 
     // Load order summary
-    let total = 0;
+    let subtotal = 0;
     const itemsHtml = cart.map(i => {
-      const sub = i.price * i.quantity;
-      total += sub;
-      return `<p>${i.name} x${i.quantity} — <strong>₹${sub}</strong></p>`;
+      const itemSub = i.price * i.quantity;
+      subtotal += itemSub;
+      return `<div style="display:flex; align-items:center; gap:10px;">
+        <img src="${i.image}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
+        <div style="flex:1;">
+          <p style="margin:0; font-size:14px; color:#ddd;">${i.name}</p>
+          <p style="margin:0; font-size:12px;">Qty: ${i.quantity}</p>
+        </div>
+        <strong>₹${itemSub}</strong>
+      </div>`;
     }).join('');
+    
     document.getElementById('checkoutItemsList').innerHTML = itemsHtml || '<p>No items</p>';
-    document.getElementById('checkoutTotal').textContent = `₹${total}`;
+    
+    let discount = 0;
+    const promoCode = localStorage.getItem('promoCode');
+    if (promoCode === 'WELCOME10') {
+      discount = Math.round(subtotal * 0.1);
+      document.getElementById('coDiscountRow').style.display = 'flex';
+      document.getElementById('coDiscount').textContent = `-₹${discount}`;
+    }
+
+    const shipping = 500;
+    const afterDiscount = subtotal - discount;
+    const tax = Math.round(afterDiscount * 0.18);
+    const finalTotal = afterDiscount + shipping + tax;
+
+    document.getElementById('coSubtotal').textContent = `₹${subtotal}`;
+    document.getElementById('coTax').textContent = `₹${tax}`;
+    document.getElementById('checkoutTotal').textContent = `₹${finalTotal}`;
 
     async function handleCheckout(e) {
       e.preventDefault();
+      
+      const ccNum = document.getElementById('ccNum').value.replace(/\s+/g, '');
+      const ccCvc = document.getElementById('ccCvc').value;
+
+      if (ccNum.length < 15) {
+        showNotification("Please enter a valid card number");
+        return;
+      }
+      if (ccCvc.length < 3) {
+        showNotification("Please enter a valid CVC");
+        return;
+      }
+
       const shippingAddress = document.getElementById('shippingAddress').value;
 
       try {
@@ -110,7 +160,7 @@
           },
           body: JSON.stringify({
             items: cart,
-            totalAmount: total,
+            promoCode: promoCode,
             shippingAddress: shippingAddress
           })
         });

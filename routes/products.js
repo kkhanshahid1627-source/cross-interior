@@ -13,6 +13,21 @@ router.post("/add", verifyAdmin, async (req, res) => {
   }
 });
 
+// Update Product (Admin Only)
+router.put("/:id", verifyAdmin, async (req, res) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    if (!updatedProduct) return res.status(404).json("Product not found");
+    res.json(updatedProduct);
+  } catch (err) {
+    res.status(400).json(err.message);
+  }
+});
+
 // Get All Products (Public, with optional category & search filter)
 router.get("/", async (req, res) => {
   try {

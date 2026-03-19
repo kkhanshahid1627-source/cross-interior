@@ -24,8 +24,21 @@
       <p>Your cart is empty.</p>
     </div>
     <div id="cartSummary" style="display:none; margin-top: 30px; padding: 30px; border-top: 1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
+        <div style="flex:1;">
+          <div style="display:flex; gap:10px; margin-bottom: 10px;">
+            <input type="text" id="promoCode" placeholder="Promo Code" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.05); color:white; font-family:'Outfit';">
+            <button class="btn btn-outline" onclick="applyPromo()">Apply</button>
+          </div>
+          <p id="promoMsg" style="color:var(--primary-light); font-size:14px; margin-bottom: 10px;"></p>
+        </div>
+        <div style="text-align:right;">
+          <h2 style="margin-bottom: 5px;">Total: <span id="cartTotal" class="accent-text">₹0</span></h2>
+          <p id="discountTxt" style="color:#2ecc71; display:none; margin-bottom: 10px;">- 10% Applied</p>
+        </div>
+      </div>
       <div class="cart-summary-row" style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Total: <span id="cartTotal" class="accent-text">₹0</span></h2>
+        <button class="btn btn-outline" style="border-color:#e74c3c; color:#e74c3c;" onclick="clearCart()">Clear Cart</button>
         <a href="checkout.html" class="btn" style="font-size:18px; padding:15px 35px;">Proceed to Checkout</a>
       </div>
     </div>
@@ -57,10 +70,10 @@
       }
 
       let html = '';
-      let total = 0;
+      let subtotal = 0;
       cart.forEach((item, index) => {
         const itemTotal = item.price * item.quantity;
-        total += itemTotal;
+        subtotal += itemTotal;
         html += `
           <div class="cart-item glass-dark" style="border-radius: 16px; margin-bottom: 15px;">
             <img src="${item.image}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1586023492125-27b2c045efd7'">
@@ -82,7 +95,39 @@
       });
       container.innerHTML = html;
       summary.style.display = 'block';
-      document.getElementById('cartTotal').textContent = `₹${total}`;
+      let finalTotal = discountApplied ? Math.round(subtotal * 0.9) : subtotal;
+      document.getElementById('cartTotal').textContent = `₹${finalTotal}`;
+      document.getElementById('discountTxt').style.display = discountApplied ? 'block' : 'none';
+    }
+
+    let discountApplied = false;
+    function applyPromo() {
+      const code = document.getElementById('promoCode').value;
+      if (code === 'WELCOME10') {
+        discountApplied = true;
+        document.getElementById('promoMsg').textContent = "10% Discount applied successfully!";
+        localStorage.setItem('promoCode', 'WELCOME10');
+      } else {
+        discountApplied = false;
+        document.getElementById('promoMsg').textContent = "Invalid promo code.";
+        document.getElementById('promoMsg').style.color = "#e74c3c";
+        localStorage.removeItem('promoCode');
+        setTimeout(() => {
+          document.getElementById('promoMsg').textContent = "";
+          document.getElementById('promoMsg').style.color = "var(--primary-light)";
+        }, 3000);
+      }
+      renderCart();
+    }
+
+    function clearCart() {
+      if(!confirm('Are you sure you want to empty your cart?')) return;
+      cart = [];
+      discountApplied = false;
+      localStorage.removeItem('promoCode');
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderCart();
+      showNotification("Cart cleared");
     }
 
     function changeQty(index, delta) {
@@ -97,6 +142,13 @@
       localStorage.setItem('cart', JSON.stringify(cart));
       renderCart();
       showNotification("Item removed");
+    }
+
+    // Check if promo was previously applied
+    if (localStorage.getItem('promoCode') === 'WELCOME10') {
+      discountApplied = true;
+      document.getElementById('promoCode').value = 'WELCOME10';
+      document.getElementById('promoMsg').textContent = "10% Discount applied successfully!";
     }
 
     renderCart();

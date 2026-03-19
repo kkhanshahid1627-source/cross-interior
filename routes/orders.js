@@ -33,7 +33,10 @@ router.post("/create-payment-intent", verifyToken, async (req, res) => {
 router.post("/checkout", verifyToken, async (req, res) => {
   try {
     const items = req.body.items;
+    const promoCode = req.body.promoCode;
     
+    let calculatedSubtotal = 0;
+
     // Check and deduct stock
     for (const item of items) {
        const product = await Product.findById(item._id);
@@ -43,14 +46,26 @@ router.post("/checkout", verifyToken, async (req, res) => {
        }
        product.stock -= item.quantity;
        await product.save();
+       
+       calculatedSubtotal += (product.price * item.quantity);
     }
+
+    let discount = 0;
+    if (promoCode === 'WELCOME10') {
+      discount = Math.round(calculatedSubtotal * 0.1);
+    }
+
+    const shipping = 500;
+    const afterDiscount = calculatedSubtotal - discount;
+    const tax = Math.round(afterDiscount * 0.18);
+    const finalCalculatedTotal = afterDiscount + shipping + tax;
 
     const newOrder = new Order({
       user: req.user.id,
       items: items,
-      totalAmount: req.body.totalAmount,
+      totalAmount: finalCalculatedTotal,
       shippingAddress: req.body.shippingAddress,
-      status: "Completed" 
+      status: "Processing" 
     });
     const savedOrder = await newOrder.save();
     res.status(200).json(savedOrder);

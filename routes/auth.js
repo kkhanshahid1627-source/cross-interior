@@ -87,6 +87,33 @@ router.put("/update", verifyToken, async (req, res) => {
   }
 });
 
+// Change Password
+router.put("/change-password", verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    // Find the user
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json("User not found");
+
+    // Check old password
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(400).json("Current password is incorrect");
+
+    // Check new password length
+    if (newPassword.length < 6) return res.status(400).json("New password must be at least 6 characters");
+
+    // Hash & Save new password
+    const hash = await bcrypt.hash(newPassword, 10);
+    user.password = hash;
+    await user.save();
+
+    res.json("Password updated successfully");
+  } catch (err) {
+    res.status(500).json("Error changing password");
+  }
+});
+
 // Toggle Wishlist Item
 router.post("/wishlist/toggle/:productId", verifyToken, async (req, res) => {
   try {

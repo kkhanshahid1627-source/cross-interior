@@ -51,6 +51,11 @@
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
+      if (password.length < 6) {
+        showNotification("Password must be at least 6 characters.", true);
+        return;
+      }
+
       try {
         const res = await fetch("/api/auth/register", {
           method: "POST",

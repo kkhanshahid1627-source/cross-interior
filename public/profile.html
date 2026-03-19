@@ -43,6 +43,20 @@
         <p>Loading wishlist...</p>
       </div>
     </div>
+    
+    <!-- Change Password -->
+    <div class="glass-dark" style="padding: 40px; border-radius: 20px; margin-bottom: 30px;">
+      <h2 style="margin-bottom: 20px;">Security <span class="accent-text">Settings</span></h2>
+      <div class="input-group">
+        <label>Current Password</label>
+        <input type="password" id="cp_current" placeholder="Enter current password">
+      </div>
+      <div class="input-group">
+        <label>New Password</label>
+        <input type="password" id="cp_new" placeholder="Enter new password (min 6 characters)">
+      </div>
+      <button class="btn" onclick="changePassword()">Change Password</button>
+    </div>
 
     <!-- Order History -->
     <h2 style="margin-bottom: 20px;">Order <span class="accent-text">History</span></h2>
@@ -132,6 +146,42 @@
           loadProfile();
         }
       } catch (err) { }
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById('cp_current').value;
+      const newPassword = document.getElementById('cp_new').value;
+
+      if (!currentPassword || !newPassword) {
+        showNotification("Please fill in both password fields.");
+        return;
+      }
+      if (newPassword.length < 6) {
+        showNotification("New password must be at least 6 characters.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/auth/change-password", {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+            "auth-token": token
+          },
+          body: JSON.stringify({ currentPassword, newPassword })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          showNotification("Password changed successfully!");
+          document.getElementById('cp_current').value = '';
+          document.getElementById('cp_new').value = '';
+        } else {
+          showNotification(data);
+        }
+      } catch (err) {
+        showNotification("Error changing password");
+      }
     }
 
     async function loadOrders() {

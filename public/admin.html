@@ -61,7 +61,16 @@
 
       <!-- VIEW ORDERS -->
       <div id="viewOrdersPanel" class="dashboard-panel">
-        <h2>Customer <span class="accent-text">Orders</span></h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h2 style="margin:0;">Customer <span class="accent-text">Orders</span></h2>
+          <select id="orderFilter" class="btn btn-outline" style="padding: 10px; background: rgba(0,0,0,0.5); border-radius: 10px;" onchange="loadOrders()">
+            <option value="All">All Statuses</option>
+            <option value="Processing">Processing</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
         <div class="grid" id="adminOrdersGrid" style="grid-template-columns: 1fr;">
            <!-- Loaded via JS -->
         </div>
@@ -85,6 +94,44 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- EDIT PRODUCT MODAL -->
+  <div id="editProductModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div class="glass-dark" style="padding: 40px; border-radius: 20px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+      <h2 style="margin-bottom: 20px;">Edit <span class="accent-text">Product</span></h2>
+      <input type="hidden" id="edit_p_id">
+      <div class="admin-form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+        <div class="input-group">
+          <label>Product Name</label>
+          <input type="text" id="edit_p_name">
+        </div>
+        <div class="input-group">
+          <label>Price (₹)</label>
+          <input type="number" id="edit_p_price">
+        </div>
+        <div class="input-group">
+          <label>Image URL</label>
+          <input type="text" id="edit_p_image">
+        </div>
+        <div class="input-group">
+          <label>Category</label>
+          <input type="text" id="edit_p_category">
+        </div>
+        <div class="input-group" style="grid-column: 1/-1;">
+          <label>Description</label>
+          <input type="text" id="edit_p_desc">
+        </div>
+        <div class="input-group" style="grid-column: 1/-1;">
+          <label>Stock Count</label>
+          <input type="number" id="edit_p_stock" min="0">
+        </div>
+        <div style="grid-column: 1/-1; display: flex; gap: 15px; margin-top: 10px;">
+          <button class="btn" style="flex:1;" onclick="submitEditProduct()">Save Changes</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('editProductModal').style.display='none'">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -161,7 +208,10 @@
               <h3>${p.name}</h3>
               <p style="color:var(--accent); font-size:18px; font-weight:bold; margin: 10px 0;">₹${p.price}</p>
               <p style="color:#aaa; font-size:13px; margin-bottom: 10px;">Stock: ${p.stock !== undefined ? p.stock : 'N/A'}</p>
-              <button class="btn btn-outline" style="width:100%" onclick="deleteProduct('${p._id}')">Delete</button>
+              <div style="display:flex; gap:10px;">
+                <button class="btn btn-outline" style="flex:1; border-color:var(--primary); color:white;" onclick='openEditModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>Edit</button>
+                <button class="btn btn-outline" style="flex:1; border-color:#e74c3c; color:#e74c3c;" onclick="deleteProduct('${p._id}')">Delete</button>
+              </div>
             </div>
           `;
         });
@@ -185,14 +235,63 @@
       }
     }
 
+    function openEditModal(product) {
+      document.getElementById('edit_p_id').value = product._id;
+      document.getElementById('edit_p_name').value = product.name || '';
+      document.getElementById('edit_p_price').value = product.price || '';
+      document.getElementById('edit_p_image').value = product.image || '';
+      document.getElementById('edit_p_category').value = product.category || 'Uncategorized';
+      document.getElementById('edit_p_desc').value = product.description || '';
+      document.getElementById('edit_p_stock').value = product.stock !== undefined ? product.stock : 10;
+      
+      document.getElementById('editProductModal').style.display = 'flex';
+    }
+
+    async function submitEditProduct() {
+      const id = document.getElementById('edit_p_id').value;
+      const payload = {
+        name: document.getElementById('edit_p_name').value,
+        price: Number(document.getElementById('edit_p_price').value),
+        image: document.getElementById('edit_p_image').value,
+        category: document.getElementById('edit_p_category').value,
+        description: document.getElementById('edit_p_desc').value,
+        stock: Number(document.getElementById('edit_p_stock').value)
+      };
+
+      try {
+        const res = await fetch(`/api/products/${id}`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+            "auth-token": token
+          },
+          body: JSON.stringify(payload)
+        });
+        if(res.ok) {
+          showNotification("Product updated successfully!");
+          document.getElementById('editProductModal').style.display = 'none';
+          loadProducts();
+        } else {
+          showNotification("Failed to update product.");
+        }
+      } catch(err) {
+        showNotification("Error updating product");
+      }
+    }
+
     async function loadOrders() {
       const grid = document.getElementById('adminOrdersGrid');
+      const filter = document.getElementById('orderFilter').value;
       grid.innerHTML = "<p>Loading...</p>";
       try {
         const res = await fetch("/api/orders/all", {
           headers: { "auth-token": token }
         });
-        const orders = await res.json();
+        let orders = await res.json();
+        
+        if(filter !== 'All') {
+          orders = orders.filter(o => o.status === filter);
+        }
         
         let html = '';
         orders.forEach(o => {
