@@ -43,7 +43,7 @@
     </div>
     <div id="aiResultState" style="display:none;">
       <p style="color: var(--primary-light); font-size: 18px;">✨ Transformation complete! Your redesigned room is ready.</p>
-      <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace" alt="AI Result" style="width:100%; max-width:500px; border-radius:20px; margin-top:20px;">
+      <img id="aiResultImage" src="" alt="AI Result" style="width:100%; max-width:500px; border-radius:20px; margin-top:20px;">
     </div>
   </section>
 
@@ -243,23 +243,55 @@
       }
     }
 
-    function startAiDemo() {
-      if(!document.getElementById('roomUpload').files.length) return;
+    async function startAiDemo() {
+      const fileInput = document.getElementById('roomUpload');
+      if(!fileInput.files.length) {
+        showNotification("Please select an image first.", true);
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append("roomImage", file);
+
       document.getElementById('aiUploadState').style.display = 'none';
       document.getElementById('aiProcessingState').style.display = 'block';
       let progress = 0;
+      const progressBar = document.getElementById('aiProgress');
+      
+      // Fake progress animation while we wait for the real backend
       const progressTracker = setInterval(() => {
-        progress += Math.random() * 20;
-        if(progress >= 100) {
-          progress = 100;
-          clearInterval(progressTracker);
+        progress += (100 - progress) * 0.1; // Ease towards 90%
+        progressBar.style.width = progress + '%';
+      }, 500);
+
+      try {
+        const res = await fetch("/api/ai/transform", {
+          method: "POST",
+          body: formData
+        });
+        
+        const data = await res.json();
+        clearInterval(progressTracker);
+        progressBar.style.width = '100%';
+
+        if (res.ok && data.status === "success") {
           setTimeout(() => {
             document.getElementById('aiProcessingState').style.display = 'none';
             document.getElementById('aiResultState').style.display = 'block';
+            document.getElementById('aiResultImage').src = data.imageUrl;
           }, 500);
+        } else {
+          document.getElementById('aiProcessingState').style.display = 'none';
+          document.getElementById('aiUploadState').style.display = 'block';
+          showNotification(data.message || "Failed to transform room.", true);
         }
-        document.getElementById('aiProgress').style.width = progress + '%';
-      }, 400);
+      } catch (err) {
+        clearInterval(progressTracker);
+        document.getElementById('aiProcessingState').style.display = 'none';
+        document.getElementById('aiUploadState').style.display = 'block';
+        showNotification("Network error processing image.", true);
+      }
     }
 
     updateHeader();
