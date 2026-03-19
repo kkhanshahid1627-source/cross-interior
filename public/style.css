@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --primary: #6a11cb;
-  --primary-light: #8b5cf6;
-  --accent: #f39c12;
+  --primary: #d4af37;
+  --primary-light: #f1c40f;
+  --accent: #e67e22;
   --accent-2: #e74c3c;
-  --bg-dark: #0a0a1a;
+  --bg-dark: #12100b;
   --bg-card: rgba(255, 255, 255, 0.06);
-  --text-light: #f0f0f0;
+  --text-light: #fdfbf7;
   --text-dark: #1a1a2e;
-  --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  --gradient-hero: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  --shadow-glow: 0 0 30px rgba(106, 17, 203, 0.3);
+  --gradient-1: linear-gradient(135deg, #d4af37 0%, #f39c12 100%);
+  --gradient-2: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
+  --gradient-3: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
+  --gradient-hero: linear-gradient(135deg, #1c1810, #2c2416, #1f1b13);
+  --shadow-glow: 0 0 30px rgba(212, 175, 55, 0.3);
   --border-glass: 1px solid rgba(255, 255, 255, 0.1);
 }
 
